@@ -4,7 +4,7 @@
 
 ## 🚀 Key Features
 
-- **Smart DJ Vault:** A centralized "management layer" for storing artist contact info, genres, and payment details.
+- **Smart DJ Vault:** A centralized management layer for storing artist contact info, genres, and payment details.
 - **Dynamic Lineup Builder:** Drag-and-drop style scheduling with real-time fee summation to prevent budget overruns.
 - **The "Suggestor":** A smart recommendation engine that suggests DJs based on the genre and energy of your current lineup.
 - **One-Click Poster Gen:** Uses the HTML5 Canvas API to generate high-quality Instagram Story-ready posters instantly.
@@ -15,11 +15,10 @@
 
 - **Frontend:** React (Vite) + TypeScript
 - **Styling:** Tailwind CSS v4
-- **State Management:** LocalStorage (POC phase)
+- **Routing:** React Router Dom
 - **PWA Logic:** `vite-plugin-pwa`
-- **Routing:** `react-router-dom`
 
-## 🏗️ Technical Implementation (POC)
+## 🏗️ Technical Implementation
 
 This project serves as a transition from simple CRUD applications to complex, system-oriented management layers.
 
@@ -29,12 +28,12 @@ This project serves as a transition from simple CRUD applications to complex, sy
 
 ## 📦 Deployment on Render
 
-1.  **Build Command:** `npm run build`
-2.  **Publish Directory:** `dist`
-3.  **Environment:** Static Site
-4.  **Rewrite Rule:** _ Source: `/_`
-    - Destination: `/index.html`
-    - Action: `Rewrite` (This ensures client-side routing works on refresh).
+1. **Build Command:** `npm run build`
+2. **Publish Directory:** `dist`
+3. **Environment:** Static Site
+4. **Rewrite Rule:** - Source: `/*`
+   - Destination: `/index.html`
+   - Action: `Rewrite` (This ensures client-side routing works on refresh).
 
 ## 🔮 Future Roadmap
 
