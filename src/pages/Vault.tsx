@@ -1,19 +1,6 @@
 import { useState, useEffect } from "react";
 import { djService } from "../services/api";
-import {
-  Search,
-  Music,
-  CreditCard,
-  Phone,
-  Plus,
-  X,
-  Check,
-  Trash2,
-  User,
-  Instagram,
-  Mail,
-  Zap,
-} from "lucide-react";
+import { Search, Phone, Plus, X, Trash2, User, Mail } from "lucide-react";
 
 const Vault = () => {
   const [djs, setDjs] = useState<any[]>([]);
@@ -131,6 +118,13 @@ const Vault = () => {
   const filteredDjs = djs.filter((dj) =>
     dj.alias?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  if (loading)
+    return (
+      <div className="p-10 text-indigo-500 font-mono text-[10px] animate-pulse">
+        ACCESSING_ENCRYPTED_VAULT...
+      </div>
+    );
 
   return (
     <div className="p-4 max-w-md mx-auto pb-24 text-white">

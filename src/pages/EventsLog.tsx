@@ -6,11 +6,6 @@ import {
   X,
   Calendar,
   MapPin,
-  ChevronRight,
-  Search,
-  Filter,
-  Clock,
-  DollarSign,
   Music,
   Plus,
 } from "lucide-react";
@@ -60,6 +55,13 @@ const EventsLog = () => {
       e.location.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  if (loading)
+    return (
+      <div className="p-10 text-zinc-500 font-mono text-xs">
+        SYNCHRONIZING_LOGS...
+      </div>
+    );
+
   return (
     <div className="p-4 max-w-md mx-auto pb-24 text-white">
       {/* Header */}
@@ -82,6 +84,12 @@ const EventsLog = () => {
 
       {/* Search & Filter Bar */}
       <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Search missions..."
+          onChange={(e) => setSearchTerm(e.target.value)} // Now it's read!
+          className="..."
+        />
         {filteredEvents.map((event) => (
           <div
             key={event._id}

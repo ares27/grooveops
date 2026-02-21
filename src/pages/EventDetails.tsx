@@ -1,15 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { eventService } from "../services/api";
-import {
-  Clock,
-  Phone,
-  ChevronLeft,
-  CheckCircle2,
-  MapPin,
-  Calendar,
-  Zap,
-} from "lucide-react";
+import { Clock, Phone, ChevronLeft, MapPin, Calendar, Zap } from "lucide-react";
 
 const EventDetails = () => {
   const { id } = useParams();

@@ -1,16 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { djService, eventService } from "../services/api";
-import {
-  Calendar,
-  MapPin,
-  ArrowRight,
-  Users,
-  Plus,
-  Zap,
-  TrendingUp,
-  DollarSign,
-} from "lucide-react";
+import { Calendar, ArrowRight, Users, Zap, TrendingUp } from "lucide-react";
 
 const Dashboard = () => {
   const [events, setEvents] = useState<any[]>([]);

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, PlusSquare, Database, Zap } from "lucide-react";
+import { LayoutDashboard, PlusSquare, Database } from "lucide-react";
 
 const BottomNav = () => {
   const location = useLocation();
