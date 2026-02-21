@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import LineupBuilder from "./pages/LineupBuilder";
 import Vault from "./pages/Vault";
+import EventsLog from "./pages/EventsLog";
+import EventDetails from "./pages/EventDetails";
 import BottomNav from "./components/BottomNav";
 
 function App() {
@@ -13,6 +15,8 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/lineup/new" element={<LineupBuilder />} />
             <Route path="/vault" element={<Vault />} />
+            <Route path="/events" element={<EventsLog />} />
+            <Route path="/events/:id" element={<EventDetails />} />
           </Routes>
           <BottomNav />
         </div>
