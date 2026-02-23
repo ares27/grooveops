@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { djService, eventService } from "../services/api";
-import { Plus, X, Sparkles, Zap, CheckCircle2 } from "lucide-react"; // Added X and Sparkles
+import LineupRosterStep1 from "../components/LineupRosterStep1";
+import LineupRosterStep2 from "../components/LineupRosterStep2";
+import LineupRosterStep3 from "../components/LineupRosterStep3";
 
 // --- Types ---
 interface DJ {
@@ -12,6 +14,8 @@ interface DJ {
   vibes: string[];
   experience: string;
   fee?: number;
+  contactNumber?: string;
+  igLink?: string;
 }
 
 interface LineupSlot {
@@ -32,6 +36,8 @@ const LineupBuilder = () => {
     location: "",
     date: "",
     description: "",
+    targetGenres: [] as string[],
+    eventFee: 0,
   });
 
   const [slots, setSlots] = useState<LineupSlot[]>([
@@ -51,32 +57,6 @@ const LineupBuilder = () => {
       });
   }, []);
 
-  const addSlot = () => {
-    const lastSlot = slots[slots.length - 1];
-    let newStartTime = "22:00";
-    let newEndTime = "23:00";
-
-    if (lastSlot && lastSlot.time.includes("-")) {
-      const parts = lastSlot.time.split("-").map((t) => t.trim());
-      newStartTime = parts[1];
-      const [hours, mins] = newStartTime.split(":").map(Number);
-      newEndTime = `${String((hours + 1) % 24).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
-    }
-
-    const newSlot: LineupSlot = {
-      time: `${newStartTime} - ${newEndTime}`,
-      djId: "",
-      artistAlias: "",
-      fee: 0,
-    };
-
-    setSlots([...slots, newSlot]);
-  };
-
-  const removeSlot = (index: number) => {
-    setSlots(slots.filter((_, i) => i !== index));
-  };
-
   const getSuggestions = (currentSlotIndex: number) => {
     if (vault.length === 0) return [];
 
@@ -88,52 +68,58 @@ const LineupBuilder = () => {
 
     const slotTime = slots[currentSlotIndex].time;
 
-    return vault
-      .filter((dj) => {
-        // Rule 1: Don't suggest if already booked in this event
-        const isAlreadyBooked = slots.some((s) => s.djId === dj._id);
-        if (isAlreadyBooked) return false;
+    return (
+      vault
+        .filter((dj) => {
+          // Rule 1: Don't suggest if already booked in this event
+          const isAlreadyBooked = slots.some((s) => s.djId === dj._id);
+          if (isAlreadyBooked) return false;
 
-        // Rule 2: If no one is booked yet, suggest the "Pro" or "Regular" DJs first
-        if (bookedGenres.length === 0) {
-          return dj.experience === "pro" || dj.experience === "regular";
-        }
+          // Rule 2: Check for match with Event's Global Target Genres (Step 1 data)
+          const matchesEventProfile = dj.genres.some((g) =>
+            eventDetails.targetGenres.includes(g),
+          );
 
-        // Rule 3: Match based on genres already present in the lineup
-        const hasGenreMatch = dj.genres.some((g) => bookedGenres.includes(g));
+          // Rule 3: If no one is booked yet, prioritize Event Profile + Experience
+          if (bookedGenres.length === 0) {
+            return (
+              matchesEventProfile &&
+              (dj.experience === "pro" || dj.experience === "regular")
+            );
+          }
 
-        // Rule 4: Time-based Vibe check (looser matching)
-        const hour = parseInt(slotTime.split(":")[0]);
-        const isPeakTime = hour >= 0 && hour <= 2;
-        const isWarmup = hour >= 20 && hour <= 23;
+          // Rule 4: Match based on genres already present in the lineup (Consistency)
+          const hasGenreMatch = dj.genres.some((g) => bookedGenres.includes(g));
 
-        const hasVibeMatch = dj.vibes?.some((v: string) => {
-          const vibe = v.toLowerCase();
-          if (isPeakTime) return vibe.includes("peak") || vibe.includes("high");
-          if (isWarmup) return vibe.includes("warm") || vibe.includes("chill");
-          return false;
-        });
+          // Rule 5: Time-based Vibe check
+          const hour = parseInt(slotTime.split(":")[0]);
+          const isPeakTime = hour >= 0 && hour <= 2;
+          const isWarmup = hour >= 20 && hour <= 23;
 
-        return hasGenreMatch || hasVibeMatch;
-      })
-      .slice(0, 3); // Bumped to 3 for better variety
-  };
+          const hasVibeMatch = dj.vibes?.some((v: string) => {
+            const vibe = v.toLowerCase();
+            if (isPeakTime)
+              return vibe.includes("peak") || vibe.includes("high");
+            if (isWarmup)
+              return vibe.includes("warm") || vibe.includes("chill");
+            return false;
+          });
 
-  const handleDjSelect = (index: number, djId: string) => {
-    const selectedDj = vault.find((d) => d._id === djId);
-    const newSlots = [...slots];
-    newSlots[index] = {
-      ...newSlots[index],
-      djId,
-      fee: selectedDj?.fee || 0,
-    };
-    setSlots(newSlots);
-  };
-
-  const handleTimeChange = (index: number, newTime: string) => {
-    const newSlots = [...slots];
-    newSlots[index].time = newTime;
-    setSlots(newSlots);
+          // Logic: Suggest if they fit the event's global vibe OR match current energy
+          return matchesEventProfile || hasGenreMatch || hasVibeMatch;
+        })
+        // Sort logic: Move the best "Profile Matches" to the top of the list
+        .sort((a, b) => {
+          const aMatches = a.genres.filter((g) =>
+            eventDetails.targetGenres.includes(g),
+          ).length;
+          const bMatches = b.genres.filter((g) =>
+            eventDetails.targetGenres.includes(g),
+          ).length;
+          return bMatches - aMatches;
+        })
+        .slice(0, 3)
+    );
   };
 
   const calculateTotal = () => slots.reduce((sum, s) => sum + s.fee, 0);
@@ -149,14 +135,20 @@ const LineupBuilder = () => {
       djLineup: activeSlots.map((slot) => {
         const dj = vault.find((d) => d._id === slot.djId);
         return {
-          ...slot,
-          artistAlias: dj?.alias || "Unknown", // Snapshot the alias in case DJ is deleted later
-          finalFee: dj?.fee || 0, // Lock in the price at time of booking
+          time: slot.time,
+          djId: slot.djId,
+          fee: slot.fee,
+          artistAlias: dj?.alias || "Unknown",
+          name: dj?.name || "Legal Name Not Listed", // This fixes the label in your screenshot
+          genres: dj?.genres || [],
+          phone: dj?.contactNumber || "",
+          instagram: dj?.igLink || "",
         };
       }),
-      totalBudget: totalArtistSpend,
+      event_dj_total_price: totalArtistSpend,
       coordinatorId: "system_admin",
       status: "confirmed",
+      event_status: "Upcoming",
       createdAt: new Date(),
     };
 
@@ -211,255 +203,53 @@ const LineupBuilder = () => {
 
       {/* STEP 1: BASICS */}
       {step === 1 && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-          <div className="space-y-2">
-            <input
-              className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="Event Name"
-              value={eventDetails.name}
-              onChange={(e) =>
-                setEventDetails({ ...eventDetails, name: e.target.value })
-              }
-            />
-            <input
-              type="date"
-              className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-400"
-              value={eventDetails.date}
-              onChange={(e) =>
-                setEventDetails({ ...eventDetails, date: e.target.value })
-              }
-            />
-            <input
-              className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="Location"
-              value={eventDetails.location}
-              onChange={(e) =>
-                setEventDetails({ ...eventDetails, location: e.target.value })
-              }
-            />
-          </div>
-          <button
-            disabled={!eventDetails.name || !eventDetails.date}
-            onClick={() => setStep(2)}
-            className="w-full bg-indigo-600 disabled:bg-zinc-800 py-4 rounded-xl font-bold mt-4 shadow-lg shadow-indigo-900/20"
-          >
-            Next: Build Lineup
-          </button>
-        </div>
+        <LineupRosterStep1
+          eventDetails={eventDetails}
+          setEventDetails={setEventDetails}
+          onNext={() => setStep(2)}
+        />
       )}
 
       {/* STEP 2: DYNAMIC LINEUP */}
       {step === 2 && (
-        <div className="space-y-4 animate-in slide-in-from-right duration-300">
-          <div className="flex justify-between items-center mb-4">
-            <header>
-              <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2">
-                <Sparkles size={18} /> Roster
-              </h2>
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                Auto-Sequencing Active
-              </p>
-            </header>
-            <button
-              onClick={addSlot}
-              className="bg-indigo-600 text-white p-3 rounded-2xl hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all active:scale-90"
-            >
-              <Plus size={24} />
-            </button>
-          </div>
+        <>
+          <LineupRosterStep2
+            slots={slots}
+            vault={vault}
+            setSlots={setSlots}
+            getSuggestions={getSuggestions}
+            targetGenres={eventDetails.targetGenres}
+          />
 
-          <div className="space-y-3">
-            {slots.map((slot, idx) => (
-              <div
-                key={idx}
-                className="bg-zinc-900/50 backdrop-blur-md p-4 rounded-3xl border border-zinc-800 relative group transition-all hover:border-zinc-700"
-              >
-                <div className="flex items-center gap-4">
-                  {/* TIME CAPTURE SECTION */}
-                  <div className="w-1/3">
-                    <label className="text-[9px] text-zinc-600 font-black uppercase mb-1.5 block tracking-tighter">
-                      Set Time
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-[11px] font-mono text-indigo-400 focus:ring-1 focus:ring-indigo-500 outline-none text-center"
-                      value={slot.time}
-                      onChange={(e) => handleTimeChange(idx, e.target.value)}
-                    />
-                  </div>
-
-                  {/* ARTIST SELECTION */}
-                  <div className="flex-1">
-                    <label className="text-[9px] text-zinc-600 font-black uppercase mb-1.5 block tracking-tighter">
-                      Assign Agent
-                    </label>
-                    <select
-                      className="w-full bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-[11px] font-bold focus:ring-1 focus:ring-indigo-500 outline-none appearance-none"
-                      value={slot.djId}
-                      onChange={(e) => handleDjSelect(idx, e.target.value)}
-                    >
-                      <option value="">Open Slot...</option>
-                      {vault.map((dj) => (
-                        <option key={dj._id} value={dj._id}>
-                          {dj.alias}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* SUGGESTION ENGINE */}
-                {!slot.djId && (
-                  <div className="mt-4 flex flex-wrap gap-2 items-center">
-                    <div className="bg-indigo-500/10 p-1 rounded-md">
-                      <Zap
-                        size={10}
-                        className="text-indigo-500 fill-indigo-500"
-                      />
-                    </div>
-                    {getSuggestions(idx)
-                      .slice(0, 3)
-                      .map((sug) => (
-                        <button
-                          key={sug._id}
-                          onClick={() => handleDjSelect(idx, sug._id)}
-                          className="text-[9px] bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 px-3 py-1.5 rounded-full hover:border-indigo-500 hover:text-indigo-400 transition-all font-bold uppercase tracking-tighter"
-                        >
-                          {sug.alias}
-                        </button>
-                      ))}
-                  </div>
-                )}
-
-                {/* REMOVE SLOT ACTION */}
-                {slots.length > 1 && (
-                  <button
-                    onClick={() => removeSlot(idx)}
-                    className="absolute -right-2 -top-2 bg-zinc-800 text-zinc-500 hover:text-red-400 p-1.5 rounded-full border border-zinc-700 opacity-0 group-hover:opacity-100 transition-all shadow-xl"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* NAVIGATION */}
+          {/* Navigation Buttons */}
           <div className="flex gap-3 mt-8">
             <button
               onClick={() => setStep(1)}
-              className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-400 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-800 transition-colors"
+              className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-400 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-800"
             >
               Back
             </button>
             <button
               onClick={() => setStep(3)}
-              className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 transition-colors"
+              className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-indigo-500/20"
             >
               Review Lineup
             </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* STEP 3: FINAL REVIEW */}
       {step === 3 && (
-        <div className="space-y-6 animate-in slide-in-from-right duration-300">
-          {/* Mission Card */}
-          <div className="bg-gradient-to-br from-indigo-600 to-indigo-900 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none text-white">
-                    {eventDetails.name || "Untitled Mission"}
-                  </h2>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-200 mt-2">
-                    {eventDetails.location} •{" "}
-                    {new Date(eventDetails.date).toDateString()}
-                  </p>
-                </div>
-                <div className="bg-white/10 p-2 rounded-xl backdrop-blur-md border border-white/20">
-                  <Sparkles className="text-white" size={20} />
-                </div>
-              </div>
-
-              {/* Live Lineup Manifest */}
-              <div className="space-y-3 pt-6 border-t border-white/10">
-                {slots
-                  .filter((s) => s.djId)
-                  .map((s, i) => {
-                    const dj = vault.find((d) => d._id === s.djId);
-                    return (
-                      <div
-                        key={i}
-                        className="flex justify-between items-center group"
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black uppercase text-indigo-300 tracking-tighter">
-                            {s.time}
-                          </span>
-                          <span className="text-sm font-black italic uppercase text-white">
-                            {dj?.alias}
-                          </span>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-white/80 bg-black/20 px-3 py-1 rounded-lg">
-                          R{dj?.fee?.toLocaleString()}
-                        </span>
-                      </div>
-                    );
-                  })}
-              </div>
-
-              {/* Total Impact Footer */}
-              <div className="mt-8 flex justify-between items-center bg-black/40 p-5 rounded-3xl border border-white/10">
-                <div>
-                  <p className="text-[9px] font-black uppercase text-white/50 tracking-widest">
-                    Estimated Payout
-                  </p>
-                  <p className="text-2xl font-black text-green-400 font-mono leading-none">
-                    R{calculateTotal().toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] font-black uppercase text-white/50 tracking-widest">
-                    Slots
-                  </p>
-                  <p className="text-xl font-black text-white leading-none">
-                    {slots.filter((s) => s.djId).length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Decorative background element */}
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-3">
-            <button
-              onClick={saveToDatabase}
-              disabled={loading}
-              className="w-full bg-indigo-500 hover:bg-indigo-400 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 size={24} />
-                  Initialize Event
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => setStep(2)}
-              className="w-full bg-zinc-900 text-zinc-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:text-white transition-colors"
-            >
-              Adjust Deployment
-            </button>
-          </div>
-        </div>
+        <LineupRosterStep3
+          eventDetails={eventDetails}
+          slots={slots}
+          vault={vault}
+          event_dj_total_price={calculateTotal()}
+          loading={loading}
+          onSave={saveToDatabase}
+          onBack={() => setStep(2)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,35 @@
 import { useState, useEffect } from "react";
 import { djService } from "../services/api";
-import { Search, Phone, Plus, X, Trash2, User, Mail } from "lucide-react";
+import {
+  AlertCircle,
+  Search,
+  Phone,
+  Plus,
+  X,
+  Trash2,
+  User,
+  Mail,
+  CheckSquare,
+  Square,
+} from "lucide-react";
+
+// Predefined Options
+const GENRE_OPTIONS = [
+  "Techno",
+  "House",
+  "Amapiano",
+  "Hip-Hop",
+  "Afro-Tech",
+  "Drum & Bass",
+];
+const VIBE_OPTIONS = [
+  "Dark",
+  "High-Energy",
+  "Melodic",
+  "Underground",
+  "Sunset",
+  "Main-Stage",
+];
 
 const Vault = () => {
   const [djs, setDjs] = useState<any[]>([]);
@@ -17,6 +46,7 @@ const Vault = () => {
     preferredComms: "",
     alias: "",
     bio: "",
+    igLink: "",
     genres: [],
     vibes: [],
     experience: "regular",
@@ -25,8 +55,18 @@ const Vault = () => {
     mixUrl: "",
   });
 
-  const [vibeInput, setVibeInput] = useState("");
-  const [genreInput, setGenreInput] = useState("");
+  // --- VALIDATION LOGIC ---
+  const isEmailValid = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isPhoneValid = (phone: string) =>
+    /^(\+?\d{1,3}[- ]?)?\d{10}$/.test(phone.replace(/\s/g, ""));
+  const isFeeValid = !isNaN(newDj.fee) && newDj.fee >= 0;
+
+  const canSave =
+    newDj.alias.trim().length > 0 &&
+    isEmailValid(newDj.email) &&
+    isPhoneValid(newDj.contactNumber) &&
+    isFeeValid;
 
   const fetchDjs = () => {
     setLoading(true);
@@ -40,26 +80,28 @@ const Vault = () => {
     fetchDjs();
   }, []);
 
-  // Tag Logic for Vibes & Genres
-  const handleKeyDown = (e: React.KeyboardEvent, field: "vibes" | "genres") => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const inputVal = field === "vibes" ? vibeInput : genreInput;
-      const value = inputVal.trim().replace(",", "");
-
-      if (value && !newDj[field].includes(value)) {
-        setNewDj({ ...newDj, [field]: [...newDj[field], value] });
-        field === "vibes" ? setVibeInput("") : setGenreInput("");
-      }
+  // NEW: Toggle logic for checkboxes
+  const toggleSelection = (item: string, field: "genres" | "vibes") => {
+    const currentSelection = newDj[field];
+    if (currentSelection.includes(item)) {
+      setNewDj({
+        ...newDj,
+        [field]: currentSelection.filter((i: string) => i !== item),
+      });
+    } else {
+      setNewDj({
+        ...newDj,
+        [field]: [...currentSelection, item],
+      });
     }
   };
 
-  const removeTag = (tag: string, field: "vibes" | "genres") => {
-    setNewDj({
-      ...newDj,
-      [field]: newDj[field].filter((t: string) => t !== tag),
-    });
-  };
+  // const removeTag = (tag: string, field: "vibes" | "genres") => {
+  //   setNewDj({
+  //     ...newDj,
+  //     [field]: newDj[field].filter((t: string) => t !== tag),
+  //   });
+  // };
 
   const handleDelete = async (id: string, alias: string) => {
     if (window.confirm(`Remove ${alias} from the Vault?`)) {
@@ -73,6 +115,7 @@ const Vault = () => {
   };
 
   const handleSave = async () => {
+    if (!canSave) return;
     // 1. Capture the current fee from state and ensure it's a number
     const currentFee = Number(newDj.fee) || 0;
 
@@ -104,6 +147,7 @@ const Vault = () => {
       preferredComms: "",
       alias: "",
       bio: "",
+      igLink: "",
       genres: [],
       vibes: [],
       experience: "regular",
@@ -111,8 +155,8 @@ const Vault = () => {
       paymentDetails: "",
       mixUrl: "",
     });
-    setVibeInput("");
-    setGenreInput("");
+    // setVibeInput("");
+    // setGenreInput("");
   };
 
   const filteredDjs = djs.filter((dj) =>
@@ -173,79 +217,96 @@ const Vault = () => {
               onChange={(e) => setNewDj({ ...newDj, surname: e.target.value })}
             />
 
-            <div className="col-span-2">
+            {/* Email Field */}
+            <div className="col-span-2 relative">
+              {" "}
+              {/* Added 'relative' here */}
               <input
-                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
-                placeholder="Email Address"
+                className={`w-full bg-black border ${newDj.email && !isEmailValid(newDj.email) ? "border-red-500" : "border-zinc-800"} p-3 rounded-xl text-sm focus:border-indigo-500 outline-none`}
+                placeholder="Email Address *"
+                type="email"
                 value={newDj.email}
                 onChange={(e) => setNewDj({ ...newDj, email: e.target.value })}
               />
+              {newDj.email && !isEmailValid(newDj.email) && (
+                <AlertCircle
+                  size={14}
+                  className="absolute right-3 top-3.5 text-red-500"
+                />
+              )}
             </div>
 
-            <div className="col-span-2">
+            {/* Contact Number Field */}
+            <div className="col-span-2 relative">
+              {" "}
+              {/* Added 'relative' here */}
               <input
-                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
-                placeholder="Contact Number"
+                className={`w-full bg-black border ${newDj.contactNumber && !isPhoneValid(newDj.contactNumber) ? "border-red-500" : "border-zinc-800"} p-3 rounded-xl text-sm focus:border-indigo-500 outline-none`}
+                placeholder="Contact Number *"
                 value={newDj.contactNumber}
                 onChange={(e) =>
                   setNewDj({ ...newDj, contactNumber: e.target.value })
                 }
               />
+              {newDj.contactNumber && !isPhoneValid(newDj.contactNumber) && (
+                <AlertCircle
+                  size={14}
+                  className="absolute right-3 top-3.5 text-red-500"
+                />
+              )}
             </div>
 
             {/* --- CREATIVE SECTION (TAGS) --- */}
-            <div className="col-span-2 space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">
-                Genres
+            {/* --- GENRE SELECTION --- */}
+            <div className="col-span-2">
+              <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-3 block">
+                Select Genres
               </label>
-              <input
-                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
-                placeholder="Type & press Enter..."
-                value={genreInput}
-                onChange={(e) => setGenreInput(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, "genres")}
-              />
-              <div className="flex flex-wrap gap-2">
-                {newDj.genres.map((g: string) => (
-                  <span
-                    key={g}
-                    className="flex items-center gap-1 bg-zinc-800 text-zinc-300 px-2 py-1 rounded-lg text-[10px] uppercase font-bold"
+              <div className="grid grid-cols-2 gap-2">
+                {GENRE_OPTIONS.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => toggleSelection(genre, "genres")}
+                    className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-all ${
+                      newDj.genres.includes(genre)
+                        ? "bg-indigo-600 border-indigo-500 text-white"
+                        : "bg-black border-zinc-800 text-zinc-500"
+                    }`}
                   >
-                    {g}{" "}
-                    <X
-                      size={12}
-                      className="cursor-pointer text-zinc-500 hover:text-red-400"
-                      onClick={() => removeTag(g, "genres")}
-                    />
-                  </span>
+                    {newDj.genres.includes(genre) ? (
+                      <CheckSquare size={14} />
+                    ) : (
+                      <Square size={14} />
+                    )}
+                    {genre}
+                  </button>
                 ))}
               </div>
             </div>
 
-            <div className="col-span-2 space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">
-                Vibes
+            {/* --- VIBE SELECTION --- */}
+            <div className="col-span-2">
+              <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-3 block">
+                Select Vibes
               </label>
-              <input
-                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
-                placeholder="Type & press Enter..."
-                value={vibeInput}
-                onChange={(e) => setVibeInput(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, "vibes")}
-              />
-              <div className="flex flex-wrap gap-2">
-                {newDj.vibes.map((v: string) => (
-                  <span
-                    key={v}
-                    className="flex items-center gap-1 bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold"
+              <div className="grid grid-cols-2 gap-2">
+                {VIBE_OPTIONS.map((vibe) => (
+                  <button
+                    key={vibe}
+                    onClick={() => toggleSelection(vibe, "vibes")}
+                    className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-all ${
+                      newDj.vibes.includes(vibe)
+                        ? "bg-zinc-200 border-white text-black"
+                        : "bg-black border-zinc-800 text-zinc-500"
+                    }`}
                   >
-                    {v}{" "}
-                    <X
-                      size={12}
-                      className="cursor-pointer hover:text-white"
-                      onClick={() => removeTag(v, "vibes")}
-                    />
-                  </span>
+                    {newDj.vibes.includes(vibe) ? (
+                      <CheckSquare size={14} />
+                    ) : (
+                      <Square size={14} />
+                    )}
+                    {vibe}
+                  </button>
                 ))}
               </div>
             </div>
@@ -260,18 +321,24 @@ const Vault = () => {
             </div>
 
             {/* --- LOGISTICS SECTION --- */}
-            <input
-              type="number"
-              className="bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
-              placeholder="Fee (R)"
-              value={newDj.fee || ""}
-              onChange={(e) =>
-                setNewDj({
-                  ...newDj,
-                  fee: e.target.value === "" ? 0 : Number(e.target.value),
-                })
-              }
-            />
+            {/* Fee Input with Number Enforcement */}
+            <div className="col-span-1">
+              <label className="text-[9px] text-zinc-500 ml-1 uppercase">
+                Fee (R) *
+              </label>
+              <input
+                type="number"
+                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                placeholder="0"
+                value={newDj.fee}
+                onChange={(e) =>
+                  setNewDj({
+                    ...newDj,
+                    fee: e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+              />
+            </div>
 
             <select
               className="bg-black border border-zinc-800 p-3 rounded-xl text-sm text-zinc-400 outline-none focus:border-indigo-500"
@@ -305,6 +372,15 @@ const Vault = () => {
             <div className="col-span-2">
               <input
                 className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
+                placeholder="Instagram Link"
+                value={newDj.igLink}
+                onChange={(e) => setNewDj({ ...newDj, igLink: e.target.value })}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <input
+                className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm focus:border-indigo-500 outline-none"
                 placeholder="Mix URL (Soundcloud/Mixcloud)"
                 value={newDj.mixUrl}
                 onChange={(e) => setNewDj({ ...newDj, mixUrl: e.target.value })}
@@ -324,6 +400,7 @@ const Vault = () => {
 
             <div className="col-span-2 pt-2">
               <button
+                disabled={!canSave}
                 onClick={handleSave}
                 className="w-full bg-indigo-600 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
               >
