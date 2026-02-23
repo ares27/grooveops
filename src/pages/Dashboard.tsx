@@ -1,14 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { djService, eventService } from "../services/api";
-import {
-  Calendar,
-  ArrowRight,
-  Users,
-  Zap,
-  TrendingUp,
-  Tag,
-} from "lucide-react";
+import { Calendar, ArrowRight, Users, Zap, TrendingUp } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();

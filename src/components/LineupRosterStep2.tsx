@@ -6,7 +6,6 @@ import {
   Clock,
   Wallet,
   Activity,
-  AlertCircle,
   Info,
   Music,
 } from "lucide-react";

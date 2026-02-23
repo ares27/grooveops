@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   MapPin,
   Calendar,
-  Music,
   Wallet,
   Clock,
   ArrowLeft,
