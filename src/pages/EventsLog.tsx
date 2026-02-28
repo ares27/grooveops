@@ -77,7 +77,7 @@ const EventsLog = () => {
             </span>
           </h1>
           <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2">
-            Sector 02 • Deployment History
+            PD Sector 02 • Event History
           </p>
         </div>
         <Link
@@ -162,14 +162,21 @@ const EventsLog = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 opacity-50">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 opacity-60">
                       <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-200">
                         <Calendar size={12} className="text-indigo-500" />
                         {new Date(event.date).toLocaleDateString()}
                       </span>
-                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-200">
-                        <MapPin size={12} className="text-indigo-500" />
-                        {event.location}
+
+                      {/* SHORTENED LOCATION LOGIC */}
+                      <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-200 max-w-[150px]">
+                        <MapPin
+                          size={12}
+                          className="text-indigo-500 flex-shrink-0"
+                        />
+                        <span className="truncate">
+                          {event.location?.split(",")[0] || "Unknown Sector"}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -183,6 +190,25 @@ const EventsLog = () => {
                   >
                     <Trash2 size={16} />
                   </button>
+                </div>
+
+                {/* NEW: GENRE CHIPS SECTION */}
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {event.targetGenres
+                    ?.slice(0, 3)
+                    .map((genre: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-[7px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/10"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  {event.targetGenres?.length > 3 && (
+                    <span className="text-[7px] font-black text-zinc-600 uppercase">
+                      +{event.targetGenres.length - 3} More
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center pt-5 border-t border-zinc-800/50">

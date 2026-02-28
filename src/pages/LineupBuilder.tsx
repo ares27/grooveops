@@ -5,7 +5,17 @@ import LineupRosterStep1 from "../components/LineupRosterStep1";
 import LineupRosterStep2 from "../components/LineupRosterStep2";
 import LineupRosterStep3 from "../components/LineupRosterStep3";
 
-// --- Types ---
+// 1. Explicitly define the interface to match exactly what Step 1 expects
+interface EventDetailsState {
+  name: string;
+  location: string;
+  date: string;
+  description: string;
+  targetGenres: string[];
+  eventFee: number;
+  coordinates: { lat: number; lng: number };
+}
+
 interface DJ {
   _id: string;
   alias: string;
@@ -14,8 +24,8 @@ interface DJ {
   vibes: string[];
   experience: string;
   fee?: number;
-  contactNumber?: string; // Standardize this
-  igLink?: string; // Standardize this
+  contactNumber?: string;
+  igLink?: string;
 }
 
 interface LineupSlot {
@@ -32,17 +42,19 @@ const LineupBuilder = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const [eventDetails, setEventDetails] = useState({
+  // 2. Type the state using the interface defined above
+  const [eventDetails, setEventDetails] = useState<EventDetailsState>({
     name: "",
     location: "",
     date: "",
     description: "",
-    targetGenres: [] as string[],
+    targetGenres: [],
     eventFee: 0,
+    coordinates: { lat: 0, lng: 0 },
   });
 
   const [slots, setSlots] = useState<LineupSlot[]>([
-    { time: "22:00 - 23:00", djId: "", artistAlias: "", fee: 0, bpm: 124 }, // Set default BPM
+    { time: "22:00 - 23:00", djId: "", artistAlias: "", fee: 0, bpm: 124 },
   ]);
 
   useEffect(() => {
@@ -60,7 +72,6 @@ const LineupBuilder = () => {
 
   const getSuggestions = (currentSlotIndex: number) => {
     if (vault.length === 0) return [];
-
     const bookedGenres = slots
       .map((s) => vault.find((d) => d._id === s.djId)?.genres)
       .flat()
@@ -72,31 +83,25 @@ const LineupBuilder = () => {
       .filter((dj) => {
         const isAlreadyBooked = slots.some((s) => s.djId === dj._id);
         if (isAlreadyBooked) return false;
-
         const matchesEventProfile = dj.genres.some((g) =>
           eventDetails.targetGenres.includes(g),
         );
-
         if (bookedGenres.length === 0) {
           return (
             matchesEventProfile &&
             (dj.experience === "pro" || dj.experience === "regular")
           );
         }
-
         const hasGenreMatch = dj.genres.some((g) => bookedGenres.includes(g));
-
         const hour = parseInt(slotTime.split(":")[0]);
         const isPeakTime = hour >= 0 && hour <= 2;
         const isWarmup = hour >= 20 && hour <= 23;
-
         const hasVibeMatch = dj.vibes?.some((v: string) => {
           const vibe = v.toLowerCase();
           if (isPeakTime) return vibe.includes("peak") || vibe.includes("high");
           if (isWarmup) return vibe.includes("warm") || vibe.includes("chill");
           return false;
         });
-
         return matchesEventProfile || hasGenreMatch || hasVibeMatch;
       })
       .sort((a, b) => {
@@ -128,8 +133,8 @@ const LineupBuilder = () => {
           artistAlias: dj?.alias || "Unknown",
           name: dj?.name || "Legal Name Not Listed",
           genres: dj?.genres || [],
-          phone: dj?.contactNumber || "", // Aligned with DJ interface
-          instagram: dj?.igLink || "", // Aligned with DJ interface
+          phone: dj?.contactNumber || "",
+          instagram: dj?.igLink || "",
           bpm: slot.bpm || 0,
         };
       }),
@@ -144,10 +149,8 @@ const LineupBuilder = () => {
       setLoading(true);
       const response = await eventService.create(finalPayload);
       const newEventId = response.data._id;
-
       if (newEventId) {
-        // FIX: Navigation must match your EventDetails route name
-        navigate(`/eventdetails/${newEventId}`);
+        navigate(`/events/${newEventId}`);
       } else {
         navigate("/events");
       }
@@ -171,15 +174,14 @@ const LineupBuilder = () => {
   return (
     <div className="p-4 max-w-md mx-auto pb-24 text-white">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tighter italic">
-          GROOVE<span className="text-indigo-500">OPS</span>
+        <h1 className="text-3xl font-bold tracking-tighter italic uppercase">
+          Groove<span className="text-indigo-500">Ops</span>
         </h1>
         <p className="text-zinc-400 text-xs uppercase font-bold tracking-widest mt-1">
           Event Creator • Step {step}
         </p>
       </header>
 
-      {/* Progress Bar */}
       <div className="flex gap-2 mb-8">
         {[1, 2, 3].map((i) => (
           <div

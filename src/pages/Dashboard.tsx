@@ -171,18 +171,25 @@ const Dashboard = () => {
 
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-between items-start">
-                        <div>
+                        <div className="flex-1 pr-4">
                           <h4 className="font-black text-base uppercase tracking-tight italic group-hover:text-indigo-400 transition-colors leading-none">
                             {event.name}
                           </h4>
+
                           <div className="flex items-center gap-2 text-[9px] text-zinc-500 mt-2 font-bold uppercase tracking-wider">
-                            <span className="text-indigo-500">
+                            <span className="text-indigo-500 flex-shrink-0">
                               {new Date(event.date).toLocaleDateString()}
                             </span>
                             <span>•</span>
-                            <span>{event.location}</span>
+
+                            {/* SHORTENED ADDRESS LOGIC */}
+                            <span className="truncate max-w-[140px] italic">
+                              {event.location?.split(",")[0] ||
+                                "Unknown Sector"}
+                            </span>
                           </div>
                         </div>
+
                         <div className="text-right">
                           <p className="text-xs font-mono font-bold text-green-500">
                             R
@@ -203,13 +210,13 @@ const Dashboard = () => {
                             .map((genre: string, i: number) => (
                               <span
                                 key={i}
-                                className="text-[8px] font-black uppercase bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700/50"
+                                className="text-[7px] font-black uppercase bg-indigo-500/10 text-indigo-400/80 px-2 py-0.5 rounded border border-indigo-500/10"
                               >
                                 {genre}
                               </span>
                             ))}
                           {event.targetGenres.length > 3 && (
-                            <span className="text-[8px] font-black text-zinc-600 self-center">
+                            <span className="text-[7px] font-black text-zinc-600 self-center uppercase ml-1">
                               +{event.targetGenres.length - 3} MORE
                             </span>
                           )}

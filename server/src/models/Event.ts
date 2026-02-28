@@ -5,6 +5,10 @@ const EventSchema: Schema = new Schema({
   description: { type: String },
   date: { type: Date, required: true },
   location: { type: String },
+  coordinates: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
   eventFee: { type: Number, default: 0 }, // Entry fee for guests
   targetGenres: [{ type: String }], // Added to store Step 1 selections
   djLineup: [

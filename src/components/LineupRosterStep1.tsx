@@ -1,11 +1,5 @@
-import {
-  Sparkles,
-  MapPin,
-  Calendar,
-  Tag,
-  Ticket,
-  AlignLeft,
-} from "lucide-react";
+import { Sparkles, Calendar, Tag, Ticket, AlignLeft } from "lucide-react";
+import LocationSearch from "./LocationSearch";
 
 interface EventDetails {
   name: string;
@@ -13,7 +7,11 @@ interface EventDetails {
   date: string;
   description: string;
   targetGenres: string[];
-  eventFee: number; // NEW
+  eventFee: number;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
 }
 
 interface Props {
@@ -55,7 +53,7 @@ const LineupRosterStep1 = ({
         {/* Name Input */}
         <div className="relative group">
           <input
-            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-600"
             placeholder="Mission / Event Name"
             value={eventDetails.name}
             onChange={(e) =>
@@ -85,11 +83,11 @@ const LineupRosterStep1 = ({
             />
           </div>
 
-          {/* NEW: Event Entry Fee */}
+          {/* Event Entry Fee */}
           <div className="relative group">
             <input
               type="number"
-              className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-zinc-600"
               placeholder="Fee (R)"
               value={eventDetails.eventFee || ""}
               onChange={(e) =>
@@ -106,26 +104,22 @@ const LineupRosterStep1 = ({
           </div>
         </div>
 
-        {/* Location Input */}
-        <div className="relative group">
-          <input
-            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-            placeholder="Venue / Location"
-            value={eventDetails.location}
-            onChange={(e) =>
-              setEventDetails({ ...eventDetails, location: e.target.value })
-            }
-          />
-          <MapPin
-            className="absolute left-4 top-4 text-zinc-600 group-focus-within:text-indigo-500"
-            size={18}
-          />
-        </div>
+        {/* Componentized Location Search */}
+        <LocationSearch
+          value={eventDetails.location}
+          onChange={(address, coords: { lat: number; lng: number }) =>
+            setEventDetails({
+              ...eventDetails,
+              location: address,
+              coordinates: coords,
+            })
+          }
+        />
 
-        {/* NEW: Event Description */}
+        {/* Event Description */}
         <div className="relative group">
           <textarea
-            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px] resize-none"
+            className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px] resize-none placeholder:text-zinc-600"
             placeholder="Mission Briefing / Description..."
             value={eventDetails.description}
             onChange={(e) =>
@@ -173,6 +167,7 @@ const LineupRosterStep1 = ({
         disabled={
           !eventDetails.name ||
           !eventDetails.date ||
+          !eventDetails.location ||
           eventDetails.targetGenres.length === 0
         }
         onClick={onNext}

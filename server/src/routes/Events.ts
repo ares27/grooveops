@@ -41,4 +41,27 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// DELETE: Remove an Event from the Logs
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedEvent = await Event.findByIdAndDelete(req.params.id);
+
+    if (!deletedEvent) {
+      return res.status(404).json({
+        message: "Mission not found. Could not delete.",
+      });
+    }
+
+    res.json({
+      message: "Event purged from database successfully",
+      deletedId: req.params.id,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Critical Error: Could not delete event",
+      error,
+    });
+  }
+});
+
 export default router;

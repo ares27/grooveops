@@ -13,6 +13,7 @@ import {
   Users,
   Share2,
   Instagram,
+  Navigation,
   Ticket,
 } from "lucide-react";
 
@@ -87,18 +88,48 @@ const EventDetails = () => {
         <div className="bg-zinc-950/40 backdrop-blur-xl rounded-[2.45rem] p-8 relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-4">
-              <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
-                {event.name}
-              </h1>
+              <div>
+                <div className="flex items-center gap-2 mb-1 opacity-60">
+                  <MapPin size={10} className="text-indigo-300" />
+                  <span className="text-[8px] font-black uppercase tracking-[0.3em] text-indigo-300">
+                    Target Location
+                  </span>
+                </div>
+                <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
+                  {event.name}
+                </h1>
+              </div>
               <div className="bg-white/10 p-2 rounded-xl border border-white/20">
                 <Zap size={18} className="text-white fill-white" />
               </div>
             </div>
 
             <div className="flex flex-wrap gap-3 mb-6">
-              <div className="flex items-center gap-1.5 text-indigo-200 text-[10px] font-bold uppercase tracking-wide bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                <MapPin size={12} /> {event.location}
+              {/* SHORTENED ADDRESS DISPLAY */}
+              <div
+                title={event.location} // Full address shows on hover
+                className="flex items-center gap-1.5 text-indigo-200 text-[10px] font-bold uppercase tracking-wide bg-white/5 px-3 py-1 rounded-full border border-white/10 max-w-[180px]"
+              >
+                <MapPin size={12} className="flex-shrink-0" />
+                <span className="truncate">
+                  {event.location?.split(",")[0]}{" "}
+                  {/* Shows only the first part of the address */}
+                </span>
               </div>
+
+              {/* FIXED MAP TRIGGER */}
+              {event.coordinates?.lat && (
+                <button
+                  onClick={() => {
+                    const url = `https://www.google.com/maps/search/?api=1&query=${event.coordinates.lat},${event.coordinates.lng}`;
+                    window.open(url, "_blank");
+                  }}
+                  className="flex items-center gap-1.5 text-white text-[10px] font-black uppercase tracking-widest bg-indigo-500 px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+                >
+                  <Navigation size={10} /> Navigate
+                </button>
+              )}
+
               <div className="flex items-center gap-1.5 text-indigo-200 text-[10px] font-bold uppercase tracking-wide bg-white/5 px-3 py-1 rounded-full border border-white/10">
                 <Calendar size={12} /> {new Date(event.date).toDateString()}
               </div>
@@ -113,7 +144,7 @@ const EventDetails = () => {
                   {event.eventFee > 0 ? `R${event.eventFee}` : "Free Entry"}
                 </span>
               </div>
-              <p className="text-xs text-zinc-300 leading-relaxed line-clamp-2 italic opacity-80">
+              <p className="text-xs text-zinc-300 leading-relaxed italic opacity-80">
                 {event.description || "No mission description provided."}
               </p>
             </div>
@@ -146,6 +177,7 @@ const EventDetails = () => {
               </div>
             </div>
           </div>
+          {/* Abstract glow */}
           <div className="absolute -right-16 -bottom-16 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl" />
         </div>
       </div>
@@ -231,7 +263,7 @@ const EventDetails = () => {
         >
           <Share2 size={18} />
           <span className="text-xs font-black uppercase tracking-widest">
-            Distribute Briefing
+            SHARE MISSION
           </span>
         </button>
       </div>
