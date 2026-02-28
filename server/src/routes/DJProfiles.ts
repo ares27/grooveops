@@ -6,7 +6,14 @@ const router = Router();
 // CREATE: Add a new DJ Profile
 router.post("/", async (req, res) => {
   try {
-    const { vibes, genres, ...otherData } = req.body;
+    const {
+      vibes,
+      genres,
+      bankName,
+      accountHolder,
+      accountNumber,
+      ...otherData
+    } = req.body;
 
     // Helper to turn strings or messy arrays into clean tag arrays
     const cleanTags = (tags: any) => {
@@ -18,6 +25,9 @@ router.post("/", async (req, res) => {
 
     const newDj = new Dj({
       ...otherData,
+      bankName: bankName?.trim(),
+      accountHolder: accountHolder?.trim(),
+      accountNumber: accountNumber?.trim(),
       vibes: cleanTags(vibes),
       genres: cleanTags(genres),
     });
@@ -25,6 +35,12 @@ router.post("/", async (req, res) => {
     const savedDj = await newDj.save();
     res.status(201).json(savedDj);
   } catch (error) {
+    // Check for unique email error (MongoDB code 11000)
+    if ((error as any).code === 11000) {
+      return res
+        .status(400)
+        .json({ message: "This email is already registered in the Vault." });
+    }
     res.status(400).json({ message: "Error creating DJ profile", error });
   }
 });
@@ -44,6 +60,7 @@ router.put("/:id", async (req, res) => {
   try {
     const updatedDj = await Dj.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
+      runValidators: true, // Ensures the enum values (whatsapp, IG, etc.) are checked
     });
     res.json(updatedDj);
   } catch (error) {

@@ -14,8 +14,8 @@ interface DJ {
   vibes: string[];
   experience: string;
   fee?: number;
-  contactNumber?: string;
-  igLink?: string;
+  contactNumber?: string; // Standardize this
+  igLink?: string; // Standardize this
 }
 
 interface LineupSlot {
@@ -23,6 +23,7 @@ interface LineupSlot {
   djId: string;
   fee: number;
   artistAlias: string;
+  bpm: number;
 }
 
 const LineupBuilder = () => {
@@ -41,7 +42,7 @@ const LineupBuilder = () => {
   });
 
   const [slots, setSlots] = useState<LineupSlot[]>([
-    { time: "22:00 - 23:00", djId: "", artistAlias: "", fee: 0 },
+    { time: "22:00 - 23:00", djId: "", artistAlias: "", fee: 0, bpm: 124 }, // Set default BPM
   ]);
 
   useEffect(() => {
@@ -60,7 +61,6 @@ const LineupBuilder = () => {
   const getSuggestions = (currentSlotIndex: number) => {
     if (vault.length === 0) return [];
 
-    // 1. Get genres from DJs already booked in this specific event
     const bookedGenres = slots
       .map((s) => vault.find((d) => d._id === s.djId)?.genres)
       .flat()
@@ -68,68 +68,55 @@ const LineupBuilder = () => {
 
     const slotTime = slots[currentSlotIndex].time;
 
-    return (
-      vault
-        .filter((dj) => {
-          // Rule 1: Don't suggest if already booked in this event
-          const isAlreadyBooked = slots.some((s) => s.djId === dj._id);
-          if (isAlreadyBooked) return false;
+    return vault
+      .filter((dj) => {
+        const isAlreadyBooked = slots.some((s) => s.djId === dj._id);
+        if (isAlreadyBooked) return false;
 
-          // Rule 2: Check for match with Event's Global Target Genres (Step 1 data)
-          const matchesEventProfile = dj.genres.some((g) =>
-            eventDetails.targetGenres.includes(g),
+        const matchesEventProfile = dj.genres.some((g) =>
+          eventDetails.targetGenres.includes(g),
+        );
+
+        if (bookedGenres.length === 0) {
+          return (
+            matchesEventProfile &&
+            (dj.experience === "pro" || dj.experience === "regular")
           );
+        }
 
-          // Rule 3: If no one is booked yet, prioritize Event Profile + Experience
-          if (bookedGenres.length === 0) {
-            return (
-              matchesEventProfile &&
-              (dj.experience === "pro" || dj.experience === "regular")
-            );
-          }
+        const hasGenreMatch = dj.genres.some((g) => bookedGenres.includes(g));
 
-          // Rule 4: Match based on genres already present in the lineup (Consistency)
-          const hasGenreMatch = dj.genres.some((g) => bookedGenres.includes(g));
+        const hour = parseInt(slotTime.split(":")[0]);
+        const isPeakTime = hour >= 0 && hour <= 2;
+        const isWarmup = hour >= 20 && hour <= 23;
 
-          // Rule 5: Time-based Vibe check
-          const hour = parseInt(slotTime.split(":")[0]);
-          const isPeakTime = hour >= 0 && hour <= 2;
-          const isWarmup = hour >= 20 && hour <= 23;
+        const hasVibeMatch = dj.vibes?.some((v: string) => {
+          const vibe = v.toLowerCase();
+          if (isPeakTime) return vibe.includes("peak") || vibe.includes("high");
+          if (isWarmup) return vibe.includes("warm") || vibe.includes("chill");
+          return false;
+        });
 
-          const hasVibeMatch = dj.vibes?.some((v: string) => {
-            const vibe = v.toLowerCase();
-            if (isPeakTime)
-              return vibe.includes("peak") || vibe.includes("high");
-            if (isWarmup)
-              return vibe.includes("warm") || vibe.includes("chill");
-            return false;
-          });
-
-          // Logic: Suggest if they fit the event's global vibe OR match current energy
-          return matchesEventProfile || hasGenreMatch || hasVibeMatch;
-        })
-        // Sort logic: Move the best "Profile Matches" to the top of the list
-        .sort((a, b) => {
-          const aMatches = a.genres.filter((g) =>
-            eventDetails.targetGenres.includes(g),
-          ).length;
-          const bMatches = b.genres.filter((g) =>
-            eventDetails.targetGenres.includes(g),
-          ).length;
-          return bMatches - aMatches;
-        })
-        .slice(0, 3)
-    );
+        return matchesEventProfile || hasGenreMatch || hasVibeMatch;
+      })
+      .sort((a, b) => {
+        const aMatches = a.genres.filter((g) =>
+          eventDetails.targetGenres.includes(g),
+        ).length;
+        const bMatches = b.genres.filter((g) =>
+          eventDetails.targetGenres.includes(g),
+        ).length;
+        return bMatches - aMatches;
+      })
+      .slice(0, 3);
   };
 
   const calculateTotal = () => slots.reduce((sum, s) => sum + s.fee, 0);
 
   const saveToDatabase = async () => {
-    // 1. Filter out empty slots
     const activeSlots = slots.filter((s) => s.djId !== "");
     const totalArtistSpend = calculateTotal();
 
-    // 3. Enrich the payload with financial data and slot specifics
     const finalPayload = {
       ...eventDetails,
       djLineup: activeSlots.map((slot) => {
@@ -139,10 +126,11 @@ const LineupBuilder = () => {
           djId: slot.djId,
           fee: slot.fee,
           artistAlias: dj?.alias || "Unknown",
-          name: dj?.name || "Legal Name Not Listed", // This fixes the label in your screenshot
+          name: dj?.name || "Legal Name Not Listed",
           genres: dj?.genres || [],
-          phone: dj?.contactNumber || "",
-          instagram: dj?.igLink || "",
+          phone: dj?.contactNumber || "", // Aligned with DJ interface
+          instagram: dj?.igLink || "", // Aligned with DJ interface
+          bpm: slot.bpm || 0,
         };
       }),
       event_dj_total_price: totalArtistSpend,
@@ -154,29 +142,29 @@ const LineupBuilder = () => {
 
     try {
       setLoading(true);
-      // 1. Capture the response
       const response = await eventService.create(finalPayload);
-
-      // 2. Extract the new ID (usually response.data._id for MongoDB/Express)
       const newEventId = response.data._id;
 
       if (newEventId) {
-        // 3. Navigate to the detail page of the new event
-        navigate(`/events/${newEventId}`);
+        // FIX: Navigation must match your EventDetails route name
+        navigate(`/eventdetails/${newEventId}`);
       } else {
-        // Fallback if ID isn't returned for some reason
         navigate("/events");
       }
     } catch (err) {
       console.error("Save Error:", err);
-      alert("❌ Error saving event. Check console for details.");
+      alert("❌ Error saving event logs.");
+    } finally {
+      setLoading(false);
     }
   };
 
   if (loading)
     return (
-      <div className="p-10 text-white animate-pulse">
-        Initializing System...
+      <div className="flex flex-col items-center justify-center min-h-screen text-indigo-500 animate-pulse">
+        <div className="text-[10px] font-black uppercase tracking-[0.4em]">
+          Initializing System...
+        </div>
       </div>
     );
 
@@ -201,7 +189,6 @@ const LineupBuilder = () => {
         ))}
       </div>
 
-      {/* STEP 1: BASICS */}
       {step === 1 && (
         <LineupRosterStep1
           eventDetails={eventDetails}
@@ -210,7 +197,6 @@ const LineupBuilder = () => {
         />
       )}
 
-      {/* STEP 2: DYNAMIC LINEUP */}
       {step === 2 && (
         <>
           <LineupRosterStep2
@@ -221,7 +207,6 @@ const LineupBuilder = () => {
             targetGenres={eventDetails.targetGenres}
           />
 
-          {/* Navigation Buttons */}
           <div className="flex gap-3 mt-8">
             <button
               onClick={() => setStep(1)}
@@ -239,7 +224,6 @@ const LineupBuilder = () => {
         </>
       )}
 
-      {/* STEP 3: FINAL REVIEW */}
       {step === 3 && (
         <LineupRosterStep3
           eventDetails={eventDetails}

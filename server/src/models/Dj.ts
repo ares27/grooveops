@@ -14,6 +14,9 @@ export interface IDj extends Document {
   experience: "bedroom" | "regular" | "pro";
   profilePic?: string;
   mixUrl?: string;
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
   createdAt: Date;
 }
 
@@ -50,6 +53,9 @@ const DjSchema: Schema = new Schema({
     enum: ["bedroom", "regular", "pro"],
     default: "regular",
   },
+  bankName: { type: String, trim: true },
+  accountHolder: { type: String, trim: true },
+  accountNumber: { type: String, trim: true },
   profilePic: { type: String },
   mixUrl: { type: String },
   createdAt: { type: Date, default: Date.now },

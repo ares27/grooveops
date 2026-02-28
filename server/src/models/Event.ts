@@ -6,6 +6,7 @@ const EventSchema: Schema = new Schema({
   date: { type: Date, required: true },
   location: { type: String },
   eventFee: { type: Number, default: 0 }, // Entry fee for guests
+  targetGenres: [{ type: String }], // Added to store Step 1 selections
   djLineup: [
     {
       time: String,
@@ -16,6 +17,7 @@ const EventSchema: Schema = new Schema({
       phone: String,
       instagram: String,
       fee: Number,
+      bpm: Number, // Added to store manual BPM from Step 2
     },
   ],
   status: {

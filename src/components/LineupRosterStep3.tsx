@@ -6,6 +6,7 @@ import {
   Wallet,
   Clock,
   ArrowLeft,
+  Activity,
 } from "lucide-react";
 
 interface DJ {
@@ -20,6 +21,7 @@ interface LineupSlot {
   djId: string;
   fee: number;
   artistAlias: string;
+  bpm: number;
 }
 
 interface Props {
@@ -96,8 +98,6 @@ const LineupRosterStep3 = ({
               ))}
             </div>
           </div>
-
-          {/* Abstract glow */}
           <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
         </div>
       </div>
@@ -114,7 +114,7 @@ const LineupRosterStep3 = ({
             return (
               <div
                 key={i}
-                className="flex items-center gap-4 bg-zinc-900/50 border border-zinc-800/50 p-4 rounded-3xl hover:border-zinc-700 transition-colors"
+                className="flex items-center gap-4 bg-zinc-900/50 border border-zinc-800/50 p-4 rounded-3xl hover:border-zinc-700 transition-colors group"
               >
                 <div className="text-center min-w-[60px] border-r border-zinc-800 pr-4">
                   <p className="text-[10px] font-mono font-bold text-indigo-500 leading-none">
@@ -126,9 +126,18 @@ const LineupRosterStep3 = ({
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase italic text-zinc-100">
-                    {dj?.alias}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-black uppercase italic text-zinc-100">
+                      {dj?.alias}
+                    </p>
+                    {/* BPM BADGE IN THE CARD */}
+                    <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-md">
+                      <Activity size={8} className="text-indigo-400" />
+                      <span className="text-[8px] font-mono font-bold text-indigo-400">
+                        {slot.bpm}
+                      </span>
+                    </div>
+                  </div>
                   <div className="flex gap-2 mt-1">
                     {dj?.genres.slice(0, 2).map((g, idx) => (
                       <span
