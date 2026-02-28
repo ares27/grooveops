@@ -64,7 +64,7 @@ const MapPickerModal = ({ initialCoords, onConfirm, onClose }: Props) => {
         {/* Header */}
         <div className="p-6 flex justify-between items-center border-b border-zinc-800">
           <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500">
-            Manual Recon / Map Picker
+            Where's the mission?
           </h3>
           <button
             onClick={onClose}
