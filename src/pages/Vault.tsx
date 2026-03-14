@@ -102,10 +102,12 @@ const Vault = () => {
   const navigate = useNavigate();
   const [djs, setDjs] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showPaymentAccordion, setShowPaymentAccordion] = useState(false); // NEW
-
-  const [searchTerm, setSearchTerm] = useState("");
+  const [showPaymentAccordion, setShowPaymentAccordion] = useState(false);
+  const [expandedTags, setExpandedTags] = useState<
+    Record<string, { genres: boolean; vibes: boolean }>
+  >({});
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Expanded Form State
   const [newDj, setNewDj] = useState<any>({
@@ -148,6 +150,16 @@ const Vault = () => {
       setDjs(res.data);
       setLoading(false);
     });
+  };
+
+  const toggleTagExpansion = (djId: string, field: "genres" | "vibes") => {
+    setExpandedTags((prev) => ({
+      ...prev,
+      [djId]: {
+        ...prev[djId],
+        [field]: !prev[djId]?.[field],
+      },
+    }));
   };
 
   useEffect(() => {
@@ -611,23 +623,94 @@ const Vault = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 mt-5">
-                  {dj.genres?.map((g: string) => (
-                    <span
-                      key={g}
-                      className="text-[8px] bg-zinc-800 text-zinc-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-zinc-800/50"
-                    >
-                      {g}
-                    </span>
-                  ))}
-                  {dj.vibes?.map((v: string) => (
-                    <span
-                      key={v}
-                      className="text-[8px] bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-indigo-500/20"
-                    >
-                      #{v}
-                    </span>
-                  ))}
+                <div className="space-y-3 mt-5">
+                  {/* Genres Section */}
+                  <div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {dj.genres?.slice(0, 5).map((g: string) => (
+                        <span
+                          key={g}
+                          className="text-[8px] bg-zinc-800 text-zinc-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-zinc-800/50"
+                        >
+                          {g}
+                        </span>
+                      ))}
+                      {expandedTags[dj._id!]?.genres &&
+                        dj.genres?.slice(5).map((g: string) => (
+                          <span
+                            key={g}
+                            className="text-[8px] bg-zinc-800 text-zinc-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-zinc-800/50"
+                          >
+                            {g}
+                          </span>
+                        ))}
+                    </div>
+                    {dj.genres && dj.genres.length > 5 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTagExpansion(dj._id!, "genres");
+                        }}
+                        className="text-[8px] text-indigo-400 font-bold mt-2 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                      >
+                        {expandedTags[dj._id!]?.genres ? (
+                          <>
+                            Show less{" "}
+                            <ChevronDown size={10} className="rotate-180" />
+                          </>
+                        ) : (
+                          <>
+                            +{dj.genres.length - 5} more{" "}
+                            <ChevronDown size={10} />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Vibes Section */}
+                  <div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {dj.vibes?.slice(0, 5).map((v: string) => (
+                        <span
+                          key={v}
+                          className="text-[8px] bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-indigo-500/20"
+                        >
+                          #{v}
+                        </span>
+                      ))}
+                      {expandedTags[dj._id!]?.vibes &&
+                        dj.vibes?.slice(5).map((v: string) => (
+                          <span
+                            key={v}
+                            className="text-[8px] bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-md font-black uppercase tracking-widest border border-indigo-500/20"
+                          >
+                            #{v}
+                          </span>
+                        ))}
+                    </div>
+                    {dj.vibes && dj.vibes.length > 5 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTagExpansion(dj._id!, "vibes");
+                        }}
+                        className="text-[8px] text-indigo-400 font-bold mt-2 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                      >
+                        {expandedTags[dj._id!]?.vibes ? (
+                          <>
+                            Show less{" "}
+                            <ChevronDown size={10} className="rotate-180" />
+                          </>
+                        ) : (
+                          <>
+                            +{dj.vibes.length - 5} more{" "}
+                            <ChevronDown size={10} />
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-5 mt-6 border-t border-zinc-800/50">
