@@ -55,12 +55,25 @@ router.get("/", async (req, res) => {
   }
 });
 
+// READ: Get a single DJ Profile by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const dj = await Dj.findById(req.params.id);
+    if (!dj) {
+      return res.status(404).json({ message: "DJ not found" });
+    }
+    res.json(dj);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching DJ", error });
+  }
+});
+
 // UPDATE: Update a DJ Profile
 router.put("/:id", async (req, res) => {
   try {
     const updatedDj = await Dj.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-      runValidators: true, // Ensures the enum values (whatsapp, IG, etc.) are checked
+      runValidators: true,
     });
     res.json(updatedDj);
   } catch (error) {

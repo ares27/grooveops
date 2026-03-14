@@ -99,14 +99,14 @@ const Dashboard = () => {
       >
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-white text-xl font-bold">New Mission</h2>
+            <h2 className="text-white text-xl font-bold">New Op</h2>
             <TrendingUp size={16} className="text-indigo-200" />
           </div>
           <p className="text-indigo-100 text-xs mb-5 opacity-70">
             Assemble a lineup and deploy logistics.
           </p>
           <div className="flex items-center gap-2 bg-white text-indigo-600 w-fit px-4 py-2 rounded-xl font-black text-xs uppercase tracking-tight group-hover:gap-4 transition-all">
-            NEW LINEUP <ArrowRight size={14} />
+            LINEUP <ArrowRight size={14} />
           </div>
         </div>
         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-black/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
@@ -124,23 +124,21 @@ const Dashboard = () => {
         <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl flex flex-col items-center text-center">
           <Calendar size={16} className="text-zinc-600 mb-2" />
           <p className="text-2xl font-black italic">{stats.eventCount}</p>
-          <p className="text-[9px] text-zinc-500 font-bold uppercase">
-            Mission(s)
-          </p>
+          <p className="text-[9px] text-zinc-500 font-bold uppercase">Op(s)</p>
         </div>
       </div>
 
-      {/* Active Missions (Top 3 Latest) */}
+      {/* Active Ops (Top 3 Latest) */}
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4 px-1">
           <h3 className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">
-            Active Missions
+            Active Ops
           </h3>
           <Link
             to="/events"
             className="text-indigo-400 text-[10px] font-black uppercase hover:underline"
           >
-            Log History
+            Op History
           </Link>
         </div>
 

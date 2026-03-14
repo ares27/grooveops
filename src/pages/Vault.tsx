@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { djService } from "../services/api";
 import {
   AlertCircle,
@@ -25,28 +26,84 @@ const BANK_OPTIONS = [
   "TymeBank",
 ];
 
+// const EXPERIENCE_OPTIONS = [
+//   { label: "Emerging: Debut Ready", value: "emerging" },
+//   { label: "Novice: < 1 Year / 10 Gigs", value: "novice" },
+//   { label: "Regular: 1-3 Years Consistent", value: "regular" },
+//   { label: "Veteran: 3+ Years Consistent", value: "veteran" },
+//   { label: "Professional: Touring/Career", value: "pro" },
+//   { label: "Casual: Experienced / Occasional", value: "casual" },
+// ];
+
+// const PLACEMENT_OPTIONS = [
+//   "Warm-up / Opening",
+//   "Sunset / Golden Hour",
+//   "Prime Time / Peak-Hour",
+//   "Late Night / After-Hours",
+//   "Sunday / Day Party",
+// ];
+
+// const ENERGY_OPTIONS = [
+//   "Low Energy (Lounge/Background)",
+//   "Mid Energy (Head-bobbing)",
+//   "High Energy (Full Dancefloor)",
+//   "Peak Energy (Sweaty, Relentless)",
+// ];
+
 // Predefined Options
 const GENRE_OPTIONS = [
-  "Techno",
-  "House",
   "Amapiano",
-  "Hip-Hop",
+  "Afro Beats",
+  "Afro House",
   "Afro-Tech",
   "Drum & Bass",
+  "Comm/Open Format",
+  "Dark Disco",
+  "House",
+  "Tech House",
+  "Deep House",
+  "Techno",
+  "Hip-Hop",
+  "Hip-Hop / RnB",
+  "Electro",
+  "Psytrance",
+  "Breakbeats",
+  "Disco",
+  "HiNRG",
+  "Hard Groove",
+  "UKG",
+  "Speed Garage",
+  "GQOM",
+  "Other",
 ];
+
 const VIBE_OPTIONS = [
+  "Atmospheric",
+  "Cerebral",
   "Dark",
+  "Deep",
+  "Driving",
+  "Downtempo",
+  "Funky",
+  "Groove",
   "High-Energy",
+  "Main-Stage",
+  "Minimal",
   "Melodic",
+  "Nostalgic",
+  "Uplifting",
   "Underground",
   "Sunset",
-  "Main-Stage",
+  "Tribal",
+  "Other",
 ];
 
 const Vault = () => {
+  const navigate = useNavigate();
   const [djs, setDjs] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPaymentAccordion, setShowPaymentAccordion] = useState(false); // NEW
+
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -113,13 +170,6 @@ const Vault = () => {
     }
   };
 
-  // const removeTag = (tag: string, field: "vibes" | "genres") => {
-  //   setNewDj({
-  //     ...newDj,
-  //     [field]: newDj[field].filter((t: string) => t !== tag),
-  //   });
-  // };
-
   const handleDelete = async (id: string, alias: string) => {
     if (window.confirm(`Remove ${alias} from the Vault?`)) {
       try {
@@ -182,7 +232,7 @@ const Vault = () => {
   if (loading)
     return (
       <div className="p-10 text-indigo-500 font-mono text-[10px] animate-pulse">
-        ACCESSING_ENCRYPTED_VAULT...
+        ACCESSING_ENCRYPTED_ARTIST_VAULT...
       </div>
     );
 
@@ -198,7 +248,7 @@ const Vault = () => {
             </span>
           </h1>
           <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2">
-            Official Asset Roster
+            Official Artist Roster
           </p>
         </div>
         <button
@@ -521,18 +571,18 @@ const Vault = () => {
             />
             <input
               type="text"
-              placeholder="Search encrypted roster..."
+              placeholder="Search roster..."
               className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-12 py-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-bold shadow-inner"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <div className="space-y-4">
             {filteredDjs.map((dj) => (
               <div
                 key={dj._id}
-                className="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] group transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1"
+                onClick={() => navigate(`/artist/${dj._id}`)}
+                className="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] group transition-all duration-300 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">

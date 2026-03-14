@@ -5,6 +5,7 @@ import Vault from "./pages/Vault";
 import EventsLog from "./pages/EventsLog";
 import EventDetails from "./pages/EventDetails";
 import BottomNav from "./components/BottomNav";
+import ArtistProfile from "./pages/ArtistProfile";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/vault" element={<Vault />} />
             <Route path="/events" element={<EventsLog />} />
             <Route path="/events/:id" element={<EventDetails />} />
+            <Route path="/artist/:id" element={<ArtistProfile />} />
           </Routes>
           <BottomNav />
         </div>

@@ -41,6 +41,37 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// UPDATE: Modify an existing Event's parameters and lineup
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedEvent = await Event.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true, // Returns the modified document instead of the original
+        runValidators: true, // Ensures the new data follows your Schema rules
+      },
+    ).populate("djLineup.djId");
+
+    if (!updatedEvent) {
+      return res
+        .status(404)
+        .json({ message: "Mission not found. Update failed." });
+    }
+
+    console.log(`✅ Event Updated: ${updatedEvent.name}`);
+    res.json(updatedEvent);
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("❌ Update Error:", error);
+    res.status(400).json({
+      message: "Critical Error: Could not update event mission logs",
+      error: errorMessage,
+    });
+  }
+});
+
 // DELETE: Remove an Event from the Logs
 router.delete("/:id", async (req, res) => {
   try {

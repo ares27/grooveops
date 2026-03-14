@@ -11,7 +11,7 @@ export interface IDj extends Document {
   igLink: string;
   genres: string[];
   vibes: string[];
-  experience: "bedroom" | "regular" | "pro";
+  experience: "emerging" | "novice" | "regular" | "veteran" | "pro" | "casual";
   profilePic?: string;
   mixUrl?: string;
   bankName?: string;
@@ -50,7 +50,7 @@ const DjSchema: Schema = new Schema({
   ],
   experience: {
     type: String,
-    enum: ["bedroom", "regular", "pro"],
+    enum: ["emerging", "novice", "regular", "veteran", "pro", "casual"],
     default: "regular",
   },
   bankName: { type: String, trim: true },
