@@ -3,9 +3,15 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 
+// Import Firebase Admin for token verification
+import "./config/firebase.js"; // Initialize Firebase Admin SDK
+
 // Import your routes
 import djRoutes from "./routes/DJProfiles.js";
 import eventRoutes from "./routes/Events.js";
+import authRoutes from "./routes/Auth.js";
+import invitationRoutes from "./routes/Invitations.js";
+import verifyEmailRoutes from "./routes/verifyEmail.js";
 
 const app = express();
 app.use(express.json());
@@ -19,8 +25,9 @@ app.use(
 );
 
 // API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/auth", verifyEmailRoutes);
 app.use("/api/djs", djRoutes);
-app.use("/api/events", eventRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =

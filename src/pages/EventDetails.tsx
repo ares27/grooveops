@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { eventService, djService } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Clock,
   Phone,
@@ -24,6 +25,7 @@ import {
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, role } = useAuth();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [vaultDjs, setVaultDjs] = useState<any[]>([]); // To hold available DJs
@@ -154,15 +156,18 @@ const EventDetails = () => {
           </span>
         </button>
 
-        <button
-          onClick={() => {
-            if (isEditing) setEditForm(event);
-            setIsEditing(!isEditing);
-          }}
-          className={`p-2 rounded-xl transition-all ${isEditing ? "bg-red-500/20 text-red-400" : "bg-zinc-900 text-zinc-500 hover:text-indigo-400"}`}
-        >
-          {isEditing ? <X size={18} /> : <Edit3 size={18} />}
-        </button>
+        {/* Edit Button - Only for Admin and Event Creator (Organiser) */}
+        {role && (role === "Admin" || (role === "Organiser" && event?.createdBy === user?.uid)) && (
+          <button
+            onClick={() => {
+              if (isEditing) setEditForm(event);
+              setIsEditing(!isEditing);
+            }}
+            className={`p-2 rounded-xl transition-all ${isEditing ? "bg-red-500/20 text-red-400" : "bg-zinc-900 text-zinc-500 hover:text-indigo-400"}`}
+          >
+            {isEditing ? <X size={18} /> : <Edit3 size={18} />}
+          </button>
+        )}
       </div>
 
       {/* HERO SECTION */}
@@ -292,8 +297,8 @@ const EventDetails = () => {
               key={idx}
               className={`bg-zinc-900/30 border ${isEditing ? "border-orange-500/30 shadow-orange-500/5" : "border-zinc-800/50 shadow-xl"} rounded-3xl p-5 flex flex-col gap-4 group transition-all border-l-4 border-l-indigo-500 relative`}
             >
-              {/* DELETE BUTTON - ONLY IN EDIT MODE */}
-              {isEditing && (
+              {/* DELETE BUTTON - ONLY IN EDIT MODE FOR NON-ARTISTS */}
+              {isEditing && role && (role === "Admin" || role === "Organiser") && (
                 <button
                   onClick={() => removeDjFromLineup(idx)}
                   className="absolute -top-2 -right-2 bg-red-600 text-white p-2 rounded-full shadow-lg active:scale-90 z-20"
@@ -373,34 +378,39 @@ const EventDetails = () => {
                   ))}
                 </div>
 
-                {isEditing ? (
-                  <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-zinc-800">
-                    <DollarSign size={10} className="text-green-500" />
-                    <input
-                      type="number"
-                      className="w-16 bg-transparent text-right font-mono font-bold text-green-500 text-xs outline-none"
-                      value={slot.finalFee || slot.fee}
-                      onChange={(e) =>
-                        updateLineupSlot(
-                          idx,
-                          "finalFee",
-                          Number(e.target.value),
-                        )
-                      }
-                    />
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-mono font-bold text-green-500 bg-green-500/5 px-2 py-0.5 rounded-md">
-                    R{slot.finalFee || slot.fee}
-                  </span>
+                {/* Hide fee display for artists */}
+                {role && (role === "Admin" || role === "Organiser") && (
+                  <>
+                    {isEditing ? (
+                      <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-zinc-800">
+                        <DollarSign size={10} className="text-green-500" />
+                        <input
+                          type="number"
+                          className="w-16 bg-transparent text-right font-mono font-bold text-green-500 text-xs outline-none"
+                          value={slot.finalFee || slot.fee}
+                          onChange={(e) =>
+                            updateLineupSlot(
+                              idx,
+                              "finalFee",
+                              Number(e.target.value),
+                            )
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-mono font-bold text-green-500 bg-green-500/5 px-2 py-0.5 rounded-md">
+                        R{slot.finalFee || slot.fee}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           ),
         )}
 
-        {/* RECRUITMENT DRAWER - ONLY IN EDIT MODE */}
-        {isEditing && (
+        {/* RECRUITMENT DRAWER - ONLY IN EDIT MODE FOR NON-ARTISTS */}
+        {isEditing && role && (role === "Admin" || role === "Organiser") && (
           <div className="mt-8 pt-6 border-t border-zinc-800/50 animate-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-[10px] font-black uppercase text-orange-400 mb-4 flex items-center gap-2">
               <UserPlus size={14} /> Available Assets In Vault

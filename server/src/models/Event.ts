@@ -5,6 +5,7 @@ const EventSchema: Schema = new Schema({
   description: { type: String },
   date: { type: Date, required: true },
   location: { type: String },
+  createdBy: { type: String, required: true }, // Firebase UID of the organiser
   coordinates: {
     lat: { type: Number },
     lng: { type: Number },
@@ -36,6 +37,6 @@ const EventSchema: Schema = new Schema({
   },
   coordinatorId: { type: String, required: true }, // For now, a simple string ID
   event_dj_total_price: { type: Number, default: 0 },
-});
+}, { timestamps: true });
 
 export default mongoose.model("Event", EventSchema);

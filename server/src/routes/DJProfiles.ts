@@ -1,10 +1,38 @@
 import { Router } from "express";
 import Dj from "../models/Dj.js";
+import { verifyFirebaseToken, type AuthRequest } from "../middleware/auth.js";
+import User from "../models/User.js";
 
 const router = Router();
 
+/**
+ * Helper to redact bank details based on role and ownership
+ */
+const redactBankDetails = (
+  dj: any,
+  userRole: string | undefined,
+  userId: string | undefined,
+) => {
+  const djObj = dj.toObject ? dj.toObject() : { ...dj };
+
+  // Redact bank details unless user is admin or viewing their own profile
+  if (userRole !== "Admin") {
+    // Check if this is the user's own profile
+    const isOwnProfile = userId && djObj._id && userId === djObj._id.toString();
+
+    if (!isOwnProfile) {
+      // Redact bank details for non-admin, non-owner
+      djObj.bankName = undefined;
+      djObj.accountHolder = undefined;
+      djObj.accountNumber = undefined;
+    }
+  }
+
+  return djObj;
+};
+
 // CREATE: Add a new DJ Profile
-router.post("/", async (req, res) => {
+router.post("/", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
     const {
       vibes,
@@ -33,6 +61,29 @@ router.post("/", async (req, res) => {
     });
 
     const savedDj = await newDj.save();
+
+    // Link this DJ profile to the user's MongoDB account (Artist)
+    if (req.firebaseUid) {
+      const user = await User.findOne({ firebaseUid: req.firebaseUid });
+      if (user && user.role === "Artist") {
+        user.djProfile = {
+          alias: otherData.alias,
+          bio: otherData.bio,
+          genres: cleanTags(genres),
+          vibes: cleanTags(vibes),
+          experience: otherData.experience,
+          fee: otherData.fee,
+          bankName: bankName?.trim(),
+          accountHolder: accountHolder?.trim(),
+          accountNumber: accountNumber?.trim(),
+          profilePic: otherData.profilePic,
+          mixUrl: otherData.mixUrl,
+          socials: otherData.socials,
+        };
+        await user.save();
+      }
+    }
+
     res.status(201).json(savedDj);
   } catch (error) {
     // Check for unique email error (MongoDB code 11000)
@@ -45,45 +96,102 @@ router.post("/", async (req, res) => {
   }
 });
 
-// READ: Get all DJ Profiles
-router.get("/", async (req, res) => {
+// READ: Get all DJ Profiles (with role-based filtering)
+router.get("/", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
-    const djs = await Dj.find().sort({ createdAt: -1 });
-    res.json(djs);
+    let query: any = {};
+
+    // Apply role-based filtering
+    if (req.userRole === "Organiser") {
+      // Organisers see only artists they invited
+      // This requires checking against the User model
+      const organiserUsers = await User.find({
+        belongsToOrganiser: req.firebaseUid,
+        role: "Artist",
+      }).select("_id");
+
+      const artistIds = organiserUsers.map((u) => u._id);
+      // Note: This assumes the Dj model has a userId field linking to User
+      // For now, we'll return all DJs but with redacted bank details
+      // TODO: Update Dj schema to include userId/firebaseUid reference
+    } else if (req.userRole === "Admin") {
+      // Admins see all DJs
+      query = {};
+    }
+    // Artists don't have a special filter - they see all for reference
+
+    const djs = await Dj.find(query).sort({ createdAt: -1 });
+
+    // Redact bank details for each DJ
+    const redactedDjs = djs.map((dj) =>
+      redactBankDetails(dj, req.userRole, req.userId),
+    );
+
+    res.json(redactedDjs);
   } catch (error) {
     res.status(500).json({ message: "Error fetching DJs", error });
   }
 });
 
-// READ: Get a single DJ Profile by ID
-router.get("/:id", async (req, res) => {
+// READ: Get a single DJ Profile by ID (with bank detail redaction)
+router.get("/:id", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
     const dj = await Dj.findById(req.params.id);
     if (!dj) {
       return res.status(404).json({ message: "DJ not found" });
     }
-    res.json(dj);
+
+    // Redact bank details based on role
+    const redactedDj = redactBankDetails(dj, req.userRole, req.userId);
+    res.json(redactedDj);
   } catch (error) {
     res.status(500).json({ message: "Error fetching DJ", error });
   }
 });
 
-// UPDATE: Update a DJ Profile
-router.put("/:id", async (req, res) => {
+// UPDATE: Update a DJ Profile (Protected)
+router.put("/:id", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
+    const dj = await Dj.findById(req.params.id);
+
+    if (!dj) {
+      return res.status(404).json({ message: "DJ not found" });
+    }
+
+    // Only admin can change baseFee
+    if (req.body.fee && req.userRole !== "Admin") {
+      // For artists editing their own profile, remove fee from update
+      if (req.userRole === "Artist") {
+        delete req.body.fee;
+      } else if (req.userRole !== "Admin") {
+        return res.status(403).json({
+          message: "Only admins can set base rates",
+        });
+      }
+    }
+
     const updatedDj = await Dj.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    res.json(updatedDj);
+
+    // Redact bank details in response
+    const redactedDj = redactBankDetails(updatedDj, req.userRole, req.userId);
+    res.json(redactedDj);
   } catch (error) {
     res.status(400).json({ message: "Error updating DJ", error });
   }
 });
 
-// DELETE: Remove a DJ
-router.delete("/:id", async (req, res) => {
+// DELETE: Remove a DJ (Admin only)
+router.delete("/:id", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
+    if (req.userRole !== "Organiser" && req.userRole !== "Admin") {
+      return res.status(403).json({
+        message: "Only organisers can delete DJ profiles",
+      });
+    }
+
     await Dj.findByIdAndDelete(req.params.id);
     res.json({ message: "DJ deleted successfully" });
   } catch (error) {
