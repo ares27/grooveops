@@ -24,7 +24,7 @@ const BottomNav = () => {
 
   // Filter nav items based on role
   const filteredNavItems = navItems.filter(
-    (item) => !item.requiredRole || item.requiredRole.includes(role || ""),
+    (item) => !item.requiredRole || (role && item.requiredRole.includes(role)),
   );
 
   const handleSignOut = async () => {

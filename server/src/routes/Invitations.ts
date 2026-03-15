@@ -149,6 +149,10 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
     const organiserUid = req.firebaseUid;
     const organiserRole = req.userRole;
 
+    if (!organiserUid) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
     // Only organisers and admins can send invitations
     if (organiserRole !== "Organiser" && organiserRole !== "Admin") {
       return res.status(403).json({ error: "Only organisers can send invitations" });

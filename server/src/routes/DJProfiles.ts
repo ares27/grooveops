@@ -103,6 +103,9 @@ router.get("/", verifyFirebaseToken, async (req: AuthRequest, res) => {
 
     // Apply role-based filtering
     if (req.userRole === "Organiser") {
+      if (!req.firebaseUid) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       // Organisers see only artists they invited
       // This requires checking against the User model
       const organiserUsers = await User.find({
