@@ -57,7 +57,7 @@ const initializeTransporter = () => {
 const sendInvitationEmail = async (
   toEmail: string,
   invitationLink: string,
-  organiserName: string
+  organiserName: string,
 ): Promise<boolean> => {
   try {
     const transporter = initializeTransporter();
@@ -155,7 +155,9 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
 
     // Only organisers and admins can send invitations
     if (organiserRole !== "Organiser" && organiserRole !== "Admin") {
-      return res.status(403).json({ error: "Only organisers can send invitations" });
+      return res
+        .status(403)
+        .json({ error: "Only organisers can send invitations" });
     }
 
     if (!artistEmail || !artistEmail.includes("@")) {
@@ -169,7 +171,9 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
     } as any);
 
     if (existingArtist) {
-      return res.status(400).json({ error: "Artist already invited to your roster" });
+      return res
+        .status(400)
+        .json({ error: "Artist already invited to your roster" });
     }
 
     // Generate invitation token (simple approach: use a random string)
@@ -179,12 +183,12 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
     // Store invitation token in a temporary collection or in User doc
     // For now, we'll create a pending user record
     const existingUser = await User.findOne({ email: artistEmail });
-    
+
     if (existingUser && existingUser.role === "Artist") {
       // Already an artist, just link them
       existingUser.belongsToOrganiser = organiserUid as any;
       await existingUser.save();
-      
+
       return res.json({
         success: true,
         message: `Artist ${artistEmail} linked to your roster`,
@@ -193,11 +197,12 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
 
     // Send invitation email
     // Build proper invitation link with fallback
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    // const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    const clientUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const invitationLink = `${clientUrl}/artist-join?organiser=${encodeURIComponent(
-      organiserUid
+      organiserUid,
     )}&email=${encodeURIComponent(artistEmail)}`;
-    
+
     // Get organiser name for personalized email
     const organiser = await User.findOne({ firebaseUid: organiserUid } as any);
     const organiserName =
@@ -206,7 +211,11 @@ router.post("/send", verifyFirebaseToken, async (req: AuthRequest, res) => {
       "An GrooveOps Organiser";
 
     // Send email
-    const emailSent = await sendInvitationEmail(artistEmail, invitationLink, organiserName);
+    const emailSent = await sendInvitationEmail(
+      artistEmail,
+      invitationLink,
+      organiserName,
+    );
 
     res.json({
       success: true,
@@ -245,7 +254,7 @@ router.get("/roster", verifyFirebaseToken, async (req: AuthRequest, res) => {
     query.role = "Artist";
 
     const artists = await User.find(query).select(
-      "email djProfile.alias djProfile.fee djProfile.genres djProfile.vibes belongsToOrganiser createdAt"
+      "email djProfile.alias djProfile.fee djProfile.genres djProfile.vibes belongsToOrganiser createdAt",
     );
 
     res.json({ artists });
@@ -259,36 +268,41 @@ router.get("/roster", verifyFirebaseToken, async (req: AuthRequest, res) => {
  * DELETE /invitations/remove/:artistId
  * Remove artist from organiser's roster
  */
-router.delete("/remove/:artistId", verifyFirebaseToken, async (req: AuthRequest, res) => {
-  try {
-    const { artistId } = req.params;
-    const organiserUid = req.firebaseUid;
-    const organiserRole = req.userRole;
+router.delete(
+  "/remove/:artistId",
+  verifyFirebaseToken,
+  async (req: AuthRequest, res) => {
+    try {
+      const { artistId } = req.params;
+      const organiserUid = req.firebaseUid;
+      const organiserRole = req.userRole;
 
-    // Only organiser who invited or admin can remove
-    const artist = await User.findById(artistId);
-    
-    if (!artist) {
-      return res.status(404).json({ error: "Artist not found" });
+      // Only organiser who invited or admin can remove
+      const artist = await User.findById(artistId);
+
+      if (!artist) {
+        return res.status(404).json({ error: "Artist not found" });
+      }
+
+      if (
+        organiserRole !== "Admin" &&
+        (organiserRole !== "Organiser" ||
+          artist.belongsToOrganiser !== organiserUid)
+      ) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Remove the artist from organiser's roster
+      artist.belongsToOrganiser = undefined as any;
+      await artist.save();
+
+      res.json({ success: true, message: "Artist removed from roster" });
+    } catch (err) {
+      console.error("Remove artist error:", err);
+      res.status(500).json({ error: "Failed to remove artist" });
     }
-
-    if (
-      organiserRole !== "Admin" &&
-      (organiserRole !== "Organiser" || artist.belongsToOrganiser !== organiserUid)
-    ) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    // Remove the artist from organiser's roster
-    artist.belongsToOrganiser = undefined as any;
-    await artist.save();
-
-    res.json({ success: true, message: "Artist removed from roster" });
-  } catch (err) {
-    console.error("Remove artist error:", err);
-    res.status(500).json({ error: "Failed to remove artist" });
-  }
-});
+  },
+);
 
 /**
  * POST /invitations/test-email

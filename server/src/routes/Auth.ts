@@ -34,20 +34,23 @@ authRouter.post(
 
       // Use findOneAndUpdate with upsert to prevent race conditions
       // This atomically finds or creates the user
+      const updateData: any = {
+        firebaseUid,
+        email,
+        displayName: displayName || undefined,
+        photoURL: photoURL || undefined,
+        role: role || "Organiser",
+        ...(belongsToOrganiser && { belongsToOrganiser }),
+        ...(organiserProfile && { organiserProfile }),
+      };
+
+      // Only set to true, never revert to false via sync
+      if (emailVerified === true) updateData.emailVerified = true;
+      if (isSetupComplete === true) updateData.isSetupComplete = true;
+
       const user = await User.findOneAndUpdate(
         { firebaseUid }, // Find by firebaseUid
-        {
-          // Update/create with these fields
-          firebaseUid,
-          email,
-          displayName: displayName || undefined,
-          photoURL: photoURL || undefined,
-          role: role || "Organiser",
-          emailVerified: emailVerified !== undefined ? emailVerified : false,
-          isSetupComplete: isSetupComplete || false,
-          ...(belongsToOrganiser && { belongsToOrganiser }),
-          ...(organiserProfile && { organiserProfile }),
-        },
+        updateData,
         {
           upsert: true, // Create if doesn't exist
           new: true, // Return updated document
