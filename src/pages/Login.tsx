@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -11,10 +10,8 @@ import { Mail, Lock, Loader, AlertCircle, Music } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,29 +21,17 @@ const Login = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        if (password !== confirmPassword) {
-          setError("Passwords don't match");
-          setLoading(false);
-          return;
-        }
-        await createUserWithEmailAndPassword(auth, email, password);
-      }
+      await signInWithEmailAndPassword(auth, email, password);
       navigate("/");
     } catch (err: any) {
       const errorMessage = err.message || "Authentication failed";
-      if (err.code === "auth/email-already-in-use") {
-        setError("Email already in use");
-      } else if (err.code === "auth/weak-password") {
-        setError("Password should be at least 6 characters");
-      } else if (err.code === "auth/invalid-email") {
+      if (err.code === "auth/invalid-email") {
         setError("Invalid email address");
-      } else if (err.code === "auth/user-not-found") {
-        setError("User not found");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Wrong password");
+      } else if (
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError("Invalid email or password");
       } else {
         setError(errorMessage);
       }
@@ -101,35 +86,10 @@ const Login = () => {
         {/* Auth Card */}
         <div className="w-full max-w-sm animate-in fade-in zoom-in-95 duration-500 delay-100">
           <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-[2.5rem] shadow-2xl">
-            {/* Toggle Auth Mode */}
-            <div className="flex border border-zinc-800 rounded-xl p-1 mb-8 bg-zinc-950/50">
-              <button
-                onClick={() => {
-                  setIsLogin(true);
-                  setError(null);
-                }}
-                className={`flex-1 py-2 rounded-lg font-black text-[11px] uppercase tracking-widest transition-all ${
-                  isLogin
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                    : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setIsLogin(false);
-                  setError(null);
-                }}
-                className={`flex-1 py-2 rounded-lg font-black text-[11px] uppercase tracking-widest transition-all ${
-                  !isLogin
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                    : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                Sign Up
-              </button>
-            </div>
+            {/* Header */}
+            <h2 className="text-xl font-black uppercase tracking-tight text-white mb-6 text-center">
+              Welcome Back
+            </h2>
 
             {/* Form */}
             <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
@@ -175,33 +135,13 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Confirm Password (Sign Up Only) */}
-              {!isLogin && (
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-zinc-500 ml-1">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50"
-                    />
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-black border border-zinc-800 p-4 pl-10 rounded-2xl text-sm focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/20 outline-none transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Error Message */}
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-2">
-                  <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+                  <AlertCircle
+                    size={16}
+                    className="text-red-500 flex-shrink-0"
+                  />
                   <p className="text-[9px] font-bold text-red-500">{error}</p>
                 </div>
               )}
@@ -215,10 +155,10 @@ const Login = () => {
                 {loading ? (
                   <>
                     <Loader size={16} className="animate-spin" />
-                    {isLogin ? "SIGNING IN..." : "CREATING ACCOUNT..."}
+                    SIGNING IN...
                   </>
                 ) : (
-                  (isLogin ? "SIGN IN" : "CREATE ACCOUNT")
+                  "SIGN IN"
                 )}
               </button>
             </form>
@@ -269,20 +209,14 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Footer Note */}
           <div className="text-center space-y-2 mt-8">
-            <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">
-              {isLogin
-                ? "Don't have an account? Sign up above"
-                : "Already have an account? Sign in above"}
-            </p>
             <div className="flex flex-col gap-2 pt-4 border-t border-zinc-800">
-              <a
-                href="/organiser-signup"
+              <Link
+                to="/organiser-signup"
                 className="text-[9px] text-indigo-400 hover:text-indigo-300 font-black uppercase tracking-widest transition"
               >
                 → Sign up as Organiser
-              </a>
+              </Link>
               <p className="text-[8px] text-zinc-600 uppercase">
                 (Artists: wait for invitation link)
               </p>

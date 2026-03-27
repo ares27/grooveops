@@ -1,6 +1,7 @@
 # Two-Tiered Onboarding & Invitation System Implementation
 
 ## Overview
+
 This document outlines the comprehensive two-tiered onboarding and invitation system implemented for GrooveOps. The system distinguishes between **Organisers (Self-Service)** and **Artists (Invitation-Only)**, with role-based access control throughout.
 
 ---
@@ -8,10 +9,12 @@ This document outlines the comprehensive two-tiered onboarding and invitation sy
 ## 1. Organiser Onboarding Flow (Self-Service)
 
 ### Entry Point
+
 - **Route**: `/organiser-signup`
 - **Page**: `src/pages/OrganiserSignup.tsx`
 
 ### Process
+
 1. **Registration**: Users self-register with email and password via Firebase
 2. **Details Capture**: During signup, collect:
    - Agency Name
@@ -25,6 +28,7 @@ This document outlines the comprehensive two-tiered onboarding and invitation sy
    - `emailVerified: false` (until email is verified)
 
 ### Key Components
+
 - **OrganiserSignup.tsx**: Collects email, password, and organiser details
 - **EmailVerificationCheck.tsx**: Wraps protected routes, displays "Check Inbox" state until `user.emailVerified === true`
 
@@ -33,6 +37,7 @@ This document outlines the comprehensive two-tiered onboarding and invitation sy
 ## 2. Artist Onboarding Flow (Invitation-Only)
 
 ### Entry Point: Organiser Invites Artist
+
 - **Location**: DJ Vault page (`/vault`)
 - **Button**: Green "Invite New Artist" button (visible only to Organisers)
 - **Modal**: `InviteArtistModal.tsx` opens when clicked
@@ -41,37 +46,41 @@ This document outlines the comprehensive two-tiered onboarding and invitation sy
 ### Backend Invitation Process
 
 #### Route: `POST /api/invitations/send`
+
 ```typescript
 {
-  artistEmail: "artist@example.com"
+  artistEmail: "artist@example.com";
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
   "message": "Invitation link generated for artist@example.com",
-  "invitationLink": "https://grooveops.com/join-as-artist?invitedBy=ORGANISER_FIREBASE_UID"
+  "invitationLink": "https://grooveops.com/join-as-artist?email=artist@example.com"
 }
 ```
 
 **Key Logic**:
+
 - Only `Organiser` and `Admin` roles can send invitations
-- Checks if artist already linked to this organiser
-- Returns a link with `invitedBy` query parameter containing organiser's Firebase UID
+- Checks if artist already exists in the pool
+- Returns a link to the artist join page
 
 ### Artist Registration with Invitation Link
-- **Link Format**: `/join-as-artist?invitedBy=ORGANISER_ID`
+
+- **Link Format**: `/join-as-artist?email=artist@example.com`
 - **Page**: `src/pages/ArtistJoin.tsx`
 
 **Process**:
-1. Artist receives invitation (link provided by organiser in UI - email flow optional with Nodemailer)
+
+1. Artist receives invitation link
 2. Clicks link and is directed to signup page
 3. Creates account with email and password
 4. **Automatically set**:
    - `role: "Artist"`
-   - `belongsToOrganiser: ORGANISER_ID` (from URL param)
    - `isSetupComplete: false`
 5. **Redirects**: `/artist-profile-setup`
 
@@ -80,32 +89,37 @@ This document outlines the comprehensive two-tiered onboarding and invitation sy
 ## 3. Artist Profile Setup (Multi-Step Form)
 
 ### Route: `/artist-profile-setup`
+
 ### Page: `src/pages/ArtistProfileSetup.tsx`
 
 A 3-step form to prevent "Form Fatigue" and ensure high-quality data:
 
 #### **Step 1: Identity** 🎤
-- Stage Alias *(required)*
-- Bio *(required)*
-- Social Links *(optional)*:
+
+- Stage Alias _(required)_
+- Bio _(required)_
+- Social Links _(optional)_:
   - Instagram handle
   - Twitter handle
   - Spotify profile link
   - SoundCloud profile link
 
 #### **Step 2: Sound** 🎵
-- Genres *(select 1+)*: House, Techno, Drum & Bass, Amapiano, etc.
-- Vibes *(select 1+)*: Upbeat, Chill, Dark, Energetic, Groovy, etc.
+
+- Genres _(select 1+)_: House, Techno, Drum & Bass, Amapiano, etc.
+- Vibes _(select 1+)_: Upbeat, Chill, Dark, Energetic, Groovy, etc.
 - Experience Level: Beginner, Intermediate, Advanced, Professional
 
 #### **Step 3: Logistics** 💰
-- Bank Name *(required)*
-- Account Holder *(required)*
-- Account Number *(required)*
-- Base Fee/Hour *(required)*
-  - *(Note: Organisers can override per-event fees)*
+
+- Bank Name _(required)_
+- Account Holder _(required)_
+- Account Number _(required)_
+- Base Fee/Hour _(required)_
+  - _(Note: Organisers can override per-event fees)_
 
 ### On Submission
+
 1. **Create DJ Profile**: POST `/api/djs`
 2. **Update User**: PUT `/api/auth/setup-complete`
    - Sets `isSetupComplete: true`
@@ -118,21 +132,21 @@ A 3-step form to prevent "Form Fatigue" and ensure high-quality data:
 ### User Schema (MongoDB)
 
 **New Fields Added**:
+
 ```typescript
 {
   firebaseUid: String,
   email: String,
   role: "Admin" | "Organiser" | "Artist",
-  
+
   // Email Verification
   emailVerified: Boolean (default: false),
-  
+
   // Invitation System
   invitationToken?: String (optional),
   invitationTokenExpiry?: Date (optional),
-  belongsToOrganiser?: String (Organiser's Firebase UID),
   isSetupComplete: Boolean (default: false),
-  
+
   // Organiser Profile
   organiserProfile?: {
     companyName: String,
@@ -140,7 +154,7 @@ A 3-step form to prevent "Form Fatigue" and ensure high-quality data:
     location: String,
     verified: Boolean
   },
-  
+
   // Artist Profile
   djProfile?: {
     alias: String,
@@ -171,15 +185,18 @@ A 3-step form to prevent "Form Fatigue" and ensure high-quality data:
 ### Auth Routes (`/api/auth`)
 
 #### `POST /sync-user`
+
 **Enhanced** to handle:
+
 - Role assignment from request body
 - Organiser profile data
-- Artist invitation linking (`belongsToOrganiser`)
 - Email verification flag
 - Setup completion flag
 
 #### `PUT /setup-complete`
+
 **New endpoint** - Mark artist profile as complete
+
 ```typescript
 PUT /api/auth/setup-complete
 Header: Authorization: Bearer <idToken>
@@ -187,64 +204,54 @@ Response: { success: true, message: "Profile setup marked complete" }
 ```
 
 #### `GET /user`
+
 **Enhanced** to return:
+
 - `emailVerified: Boolean`
 - `isSetupComplete: Boolean`
-- `belongsToOrganiser?: String`
 
 ### Invitations Routes (`/api/invitations`)
 
 #### `POST /send`
+
 Send invitation to artist email
+
 ```
 POST /api/invitations/send
 Headers: Authorization: Bearer <idToken>
 Body: { artistEmail: "artist@email.com" }
 Response: { success: true, invitationLink: "..." }
 ```
+
 **Authorization**: Organiser or Admin only
-
-#### `GET /roster`
-Get all artists linked to organiser
-```
-GET /api/invitations/roster
-Headers: Authorization: Bearer <idToken>
-Response: {
-  artists: [
-    { _id, email, djProfile.alias, djProfile.fee, djProfile.genres, belongsToOrganiser, createdAt }
-  ]
-}
-```
-
-#### `DELETE /remove/:artistId`
-Remove artist from organiser's roster
-```
-DELETE /api/invitations/remove/:artistId
-Headers: Authorization: Bearer <idToken>
-Response: { success: true, message: "Artist removed from roster" }
-```
-**Authorization**: Organiser who invited them or Admin only
 
 ### DJ Profiles Routes (`/api/djs`) - Updated
 
 #### `POST /` (Create)
+
 **Enhancement**: Auto-link artist to their User profile when creating DJ profile
+
 - Reads `req.firebaseUid` from auth token
 - Finds User with that UID
 - If User role is "Artist", updates their `djProfile` field
 
 #### `GET /` (List)
-**Enhancement**: Role-based filtering (foundation for ownership control)
+
+**Enhancement**: Role-based access (shared pool)
+
 - Admins: See all DJs
-- Organisers: See DJs they invited (via `belongsToOrganiser`)
+- Organisers: See all DJs in the shared pool
 - Artists: See all (reference) but details redacted
 
 #### `PUT /:id` (Update)
+
 **Enhancement**: Capitalized role names for proper type checking
+
 - `role === "Admin"` (not "admin")
 - `role === "Artist"` (not "artist")
 
 #### `DELETE /:id` (Delete)
+
 **Authorization**: `role === "Admin"` only
 
 ---
@@ -252,15 +259,18 @@ Response: { success: true, message: "Artist removed from roster" }
 ## 6. Frontend Components
 
 ### New Pages
+
 1. **OrganiserSignup.tsx** - Self-service organiser registration
 2. **ArtistJoin.tsx** - Artist signup with invitation validation
 3. **ArtistProfileSetup.tsx** - Multi-step artist profile form
 
 ### New Components
+
 1. **EmailVerificationCheck.tsx** - Wrapper component for email verification guard
 2. **InviteArtistModal.tsx** - Modal for organiser to invite artists
 
 ### Updated Components
+
 1. **App.tsx** - Added routes and email verification wrapper
 2. **Vault.tsx** - Added "Invite New Artist" button for organisers
 3. **Login.tsx** - Added link to organiser signup page
@@ -270,11 +280,13 @@ Response: { success: true, message: "Artist removed from roster" }
 ## 7. RBAC Rules Implemented
 
 ### Visibility Rules
-- **Organisers** see the artists *they invited* (belongsToOrganiser)
+
+- **Organisers** see all artists in the shared pool
 - **Admin** sees all organisers and all artists
 - **Artists** cannot invite or manage other artists
 
 ### Feature Access
+
 - **Invite New Artist** button: Visible only to Organisers
 - **Artist Profile Setup**: Only after invitation acceptance
 - **DJ Vault Addition**: Organisers can add manually; Artists auto-linked via multi-step setup
@@ -284,12 +296,14 @@ Response: { success: true, message: "Artist removed from roster" }
 ## 8. Email Verification Flow
 
 ### Current Implementation
+
 - Uses Firebase's built-in `sendEmailVerification()`
 - Check box in inbox; click link to verify
 - `EmailVerificationCheck` component polls `user.emailVerified` every 3 seconds
 - Once verified, user can access protected routes
 
 ### Optional: Nodemailer Integration
+
 The `Invitations.ts` includes commented-out **Nodemailer** setup for sending custom invitation emails:
 
 ```bash
@@ -303,6 +317,7 @@ npm install nodemailer
 ## 9. Configuration Steps
 
 ### Environment Variables (`.env` in server)
+
 ```
 VITE_API_URL=http://localhost:5000/api               # Frontend API URL
 CLIENT_URL=http://localhost:5173                      # Client URL for invitations
@@ -314,6 +329,7 @@ EMAIL_PASSWORD=your-app-password                      # (Optional) Use app passw
 ```
 
 ### Firebase Setup
+
 - Ensure email verification is enabled in Firebase Console
 - Configure authorized domains if hosting
 - Test authentication with signup pages
@@ -323,6 +339,7 @@ EMAIL_PASSWORD=your-app-password                      # (Optional) Use app passw
 ## 10. Testing Checklist
 
 ### Organiser Flow
+
 - [ ] Sign up at `/organiser-signup`
 - [ ] Verify email via Firebase link
 - [ ] Access dashboard at `/`
@@ -330,6 +347,7 @@ EMAIL_PASSWORD=your-app-password                      # (Optional) Use app passw
 - [ ] Invite an artist via modal
 
 ### Artist Flow
+
 - [ ] Receive invitation link (check console/network for dev)
 - [ ] Click `/join-as-artist?invitedBy=ORGANIZER_UID`
 - [ ] Sign up with email/password
@@ -338,6 +356,7 @@ EMAIL_PASSWORD=your-app-password                      # (Optional) Use app passw
 - [ ] See profile in organiser's Vault
 
 ### Admin Flow
+
 - [ ] Admin account created manually in MongoDB
 - [ ] Can see all organisers and artists
 - [ ] Can override fees on events
@@ -359,15 +378,15 @@ EMAIL_PASSWORD=your-app-password                      # (Optional) Use app passw
 
 ## 12. Quick Reference
 
-| Route | Public? | Requires Verification? | Who Can Access |
-|-------|---------|----------------------|-----------------|
-| `/login` | Yes | N/A | All |
-| `/organiser-signup` | Yes | N/A | Anyone |
-| `/join-as-artist` | Yes (with token) | No | Invited artists |
-| `/artist-profile-setup` | No | Yes (after joining) | New artists |
-| `/vault` | No | Yes | All authenticated |
-| `/api/invitations/send` | No | Yes | Organiser, Admin |
-| `/api/invitations/roster` | No | Yes | Organiser (their own), Admin |
+| Route                     | Public?          | Requires Verification? | Who Can Access               |
+| ------------------------- | ---------------- | ---------------------- | ---------------------------- |
+| `/login`                  | Yes              | N/A                    | All                          |
+| `/organiser-signup`       | Yes              | N/A                    | Anyone                       |
+| `/join-as-artist`         | Yes (with token) | No                     | Invited artists              |
+| `/artist-profile-setup`   | No               | Yes (after joining)    | New artists                  |
+| `/vault`                  | No               | Yes                    | All authenticated            |
+| `/api/invitations/send`   | No               | Yes                    | Organiser, Admin             |
+| `/api/invitations/roster` | No               | Yes                    | Organiser (their own), Admin |
 
 ---
 

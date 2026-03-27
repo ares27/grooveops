@@ -157,17 +157,19 @@ const EventDetails = () => {
         </button>
 
         {/* Edit Button - Only for Admin and Event Creator (Organiser) */}
-        {role && (role === "Admin" || (role === "Organiser" && event?.createdBy === user?.uid)) && (
-          <button
-            onClick={() => {
-              if (isEditing) setEditForm(event);
-              setIsEditing(!isEditing);
-            }}
-            className={`p-2 rounded-xl transition-all ${isEditing ? "bg-red-500/20 text-red-400" : "bg-zinc-900 text-zinc-500 hover:text-indigo-400"}`}
-          >
-            {isEditing ? <X size={18} /> : <Edit3 size={18} />}
-          </button>
-        )}
+        {role &&
+          (role === "Admin" ||
+            (role === "Organiser" && event?.createdBy === user?.uid)) && (
+            <button
+              onClick={() => {
+                if (isEditing) setEditForm(event);
+                setIsEditing(!isEditing);
+              }}
+              className={`p-2 rounded-xl transition-all ${isEditing ? "bg-red-500/20 text-red-400" : "bg-zinc-900 text-zinc-500 hover:text-indigo-400"}`}
+            >
+              {isEditing ? <X size={18} /> : <Edit3 size={18} />}
+            </button>
+          )}
       </div>
 
       {/* HERO SECTION */}
@@ -298,14 +300,16 @@ const EventDetails = () => {
               className={`bg-zinc-900/30 border ${isEditing ? "border-orange-500/30 shadow-orange-500/5" : "border-zinc-800/50 shadow-xl"} rounded-3xl p-5 flex flex-col gap-4 group transition-all border-l-4 border-l-indigo-500 relative`}
             >
               {/* DELETE BUTTON - ONLY IN EDIT MODE FOR NON-ARTISTS */}
-              {isEditing && role && (role === "Admin" || role === "Organiser") && (
-                <button
-                  onClick={() => removeDjFromLineup(idx)}
-                  className="absolute -top-2 -right-2 bg-red-600 text-white p-2 rounded-full shadow-lg active:scale-90 z-20"
-                >
-                  <UserMinus size={14} />
-                </button>
-              )}
+              {isEditing &&
+                role &&
+                (role === "Admin" || role === "Organiser") && (
+                  <button
+                    onClick={() => removeDjFromLineup(idx)}
+                    className="absolute -top-2 -right-2 bg-red-600 text-white p-2 rounded-full shadow-lg active:scale-90 z-20"
+                  >
+                    <UserMinus size={14} />
+                  </button>
+                )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 flex-1">

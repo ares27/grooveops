@@ -99,29 +99,11 @@ router.post("/", verifyFirebaseToken, async (req: AuthRequest, res) => {
 // READ: Get all DJ Profiles (with role-based filtering)
 router.get("/", verifyFirebaseToken, async (req: AuthRequest, res) => {
   try {
-    let query: any = {};
+    const query: any = {};
 
-    // Apply role-based filtering
-    if (req.userRole === "Organiser") {
-      if (!req.firebaseUid) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
-      // Organisers see only artists they invited
-      // This requires checking against the User model
-      const organiserUsers = await User.find({
-        belongsToOrganiser: req.firebaseUid,
-        role: "Artist",
-      }).select("_id");
-
-      const artistIds = organiserUsers.map((u) => u._id);
-      // Note: This assumes the Dj model has a userId field linking to User
-      // For now, we'll return all DJs but with redacted bank details
-      // TODO: Update Dj schema to include userId/firebaseUid reference
-    } else if (req.userRole === "Admin") {
-      // Admins see all DJs
-      query = {};
-    }
-    // Artists don't have a special filter - they see all for reference
+    // Note: Previously organisers were restricted to artists they invited.
+    // Now all organisers see the full pool of artists.
+    // Admins and Artists also see all DJs.
 
     const djs = await Dj.find(query).sort({ createdAt: -1 });
 

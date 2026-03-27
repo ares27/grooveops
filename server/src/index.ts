@@ -28,6 +28,8 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", verifyEmailRoutes);
 app.use("/api/djs", djRoutes);
+app.use("/api/invitations", invitationRoutes);
+app.use("/api/events", eventRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =

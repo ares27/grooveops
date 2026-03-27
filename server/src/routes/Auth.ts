@@ -21,7 +21,6 @@ authRouter.post(
         photoURL,
         role,
         organiserProfile,
-        belongsToOrganiser,
         isSetupComplete,
         emailVerified, // Allow emailVerified to be set from request
       } = req.body;
@@ -39,10 +38,14 @@ authRouter.post(
         email,
         displayName: displayName || undefined,
         photoURL: photoURL || undefined,
-        role: role || "Organiser",
-        ...(belongsToOrganiser && { belongsToOrganiser }),
         ...(organiserProfile && { organiserProfile }),
       };
+
+      // Only set role if provided (usually during signup)
+      // Otherwise, MongoDB will keep the existing role or use the schema default
+      if (role) {
+        updateData.role = role;
+      }
 
       // Only set to true, never revert to false via sync
       if (emailVerified === true) updateData.emailVerified = true;
@@ -55,7 +58,7 @@ authRouter.post(
           upsert: true, // Create if doesn't exist
           new: true, // Return updated document
           setDefaultsOnInsert: true, // Apply schema defaults on insert
-        }
+        },
       );
 
       res.status(200).json({
@@ -104,7 +107,6 @@ authRouter.get("/user", verifyFirebaseToken, async (req: AuthRequest, res) => {
       photoURL: user.photoURL,
       emailVerified: user.emailVerified,
       isSetupComplete: user.isSetupComplete,
-      belongsToOrganiser: user.belongsToOrganiser,
     });
   } catch (error) {
     console.error("Get user error:", error);

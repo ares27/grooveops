@@ -10,7 +10,6 @@ export interface IUser extends Document {
   // For artist invitation system
   invitationToken?: string;
   invitationTokenExpiry?: Date;
-  belongsToOrganiser?: string; // Organiser's Firebase UID who invited this artist
   isSetupComplete: boolean; // Whether artist has completed profile setup
   // Artist-specific profile
   djProfile?: {
@@ -71,7 +70,6 @@ const userSchema = new Schema<IUser>(
     },
     invitationToken: String,
     invitationTokenExpiry: Date,
-    belongsToOrganiser: String, // Firebase UID of organiser who invited this artist
     isSetupComplete: {
       type: Boolean,
       default: false,
@@ -102,7 +100,7 @@ const userSchema = new Schema<IUser>(
       verified: { type: Boolean, default: false },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model<IUser>("User", userSchema);

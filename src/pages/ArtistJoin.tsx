@@ -8,9 +8,7 @@ import { AlertCircle, Music, ArrowRight } from "lucide-react";
 export default function ArtistJoin() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  // Support both old format (?invitedBy=) and new format (?organiser=)
-  const organiserUid = searchParams.get("organiser") || searchParams.get("invitedBy");
+
   const invitedEmail = searchParams.get("email") || "";
 
   const [email, setEmail] = useState(invitedEmail);
@@ -19,27 +17,6 @@ export default function ArtistJoin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  // If no organiserUid parameter, show error
-  if (!organiserUid) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 px-4">
-        <div className="w-full max-w-md p-8 bg-gray-800 rounded-2xl shadow-2xl border border-red-700/30 text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white mb-4">Invalid Invitation</h1>
-          <p className="text-gray-300 mb-6">
-            This invitation link is invalid or has expired. Please ask your organiser to send you a fresh invitation link.
-          </p>
-          <button
-            onClick={() => navigate("/login")}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +38,11 @@ export default function ArtistJoin() {
       }
 
       // Create Firebase user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
       const firebaseUser = userCredential.user;
 
       // Create MongoDB user with artist role
@@ -74,7 +55,6 @@ export default function ArtistJoin() {
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           role: "Artist",
-          belongsToOrganiser: organiserUid,
           isSetupComplete: false,
           emailVerified: true, // Always set true for invited artists
         },
@@ -82,14 +62,12 @@ export default function ArtistJoin() {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
-        }
+        },
       );
 
       setSuccess(true);
-      // Redirect to profile setup after 2 seconds
-      setTimeout(() => {
-        navigate("/artist-profile-setup");
-      }, 2000);
+      // Redirect to profile setup immediately to avoid race conditions with AuthContext sync
+      navigate("/artist-profile-setup");
     } catch (err: any) {
       console.error("Signup error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -109,7 +87,9 @@ export default function ArtistJoin() {
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
         <div className="w-full max-w-md p-8 bg-gray-800 rounded-2xl shadow-2xl border border-green-700/30 text-center">
           <Music className="w-12 h-12 text-green-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-4">Welcome to GrooveOps!</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Welcome to GrooveOps!
+          </h1>
           <p className="text-gray-300 mb-6">
             Account created successfully. Let's complete your artist profile...
           </p>
@@ -128,7 +108,9 @@ export default function ArtistJoin() {
           <Music className="w-8 h-8 text-blue-400 mr-3" />
           <h1 className="text-3xl font-bold text-white">Join as Artist</h1>
         </div>
-        <p className="text-gray-400 text-center mb-6">Create your artist account</p>
+        <p className="text-gray-400 text-center mb-6">
+          Create your artist account
+        </p>
 
         {error && (
           <div className="flex items-start gap-3 p-4 mb-6 bg-red-900/20 border border-red-700 rounded-lg">
@@ -140,7 +122,9 @@ export default function ArtistJoin() {
         <form onSubmit={handleSignup} className="space-y-4">
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -152,7 +136,9 @@ export default function ArtistJoin() {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -164,7 +150,9 @@ export default function ArtistJoin() {
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Confirm Password
+            </label>
             <input
               type="password"
               value={confirmPassword}
